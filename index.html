@@ -1306,7 +1306,7 @@ function updStrategy() {
   // ③ 연말정산 절세 한도 트래커
   // 납입 기준: 올해 경과 월 수 × 연금저축 50만 / IRP 25만 (추정)
   const now = new Date();
-  const monthsPassed = now.getMonth() + 1; // 1~12
+  const monthsPassed = now.getMonth(); // 1~12
   const penPaid  = monthsPassed * 100000;   // 연금저축 월 10만
   const irpPaid  = monthsPassed * 100000;   // IRP 월 10만 (합산용)
   const combPaid = penPaid + irpPaid;
