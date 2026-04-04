@@ -1755,7 +1755,9 @@ window.onload = async () => {
   document.getElementById('baseDate').value = new Date().toISOString().slice(0,10);
   renderInsurance();
   renderHistory();
-  await loadFromGAS();
+ await loadFromGAS();
+  // GAS 로드 후 기준일은 항상 오늘 날짜로 재설정
+  document.getElementById('baseDate').value = new Date().toISOString().slice(0,10);
   fetchPrices();
 };
 </script>
