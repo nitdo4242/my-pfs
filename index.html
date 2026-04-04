@@ -223,8 +223,8 @@ td.cv, td.ep { display: table-cell !important; vertical-align: middle; }
         <table><colgroup><col style="width:36%"><col style="width:12%"><col style="width:18%"><col style="width:17%"><col style="width:17%"></colgroup>
           <thead><tr><th>종목</th><th>주수</th><th>매입가</th><th>현재가</th><th>평가/수익률</th></tr></thead>
           <tbody>
-            <tr><td><a href="https://finance.naver.com/item/main.naver?code=381170" target="_blank" class="nlink">TIGER 미국테크TOP10 INDXX ↗</a></td><td><input type="number" id="q_irp_tech" value="141"></td><td><input type="number" id="a_irp_tech" value="15097"></td><td><input type="number" id="c_irp_tech"></td><td class="ep" id="ep_irp_tech">-</td></tr>
-            <tr><td><a href="https://finance.naver.com/item/main.naver?code=360200" target="_blank" class="nlink">ACE 미국S&P500 ↗</a></td><td><input type="number" id="q_irp_sp" value="90"></td><td><input type="number" id="a_irp_sp" value="16052"></td><td><input type="number" id="c_irp_sp"></td><td class="ep" id="ep_irp_sp">-</td></tr>
+            <tr><td><a href="https://finance.naver.com/item/main.naver?code=381170" target="_blank" class="nlink">테크TOP10 ↗</a></td><td><input type="number" id="q_irp_tech" value="141"></td><td><input type="number" id="a_irp_tech" value="15097"></td><td><input type="number" id="c_irp_tech"></td><td class="ep" id="ep_irp_tech">-</td></tr>
+            <tr><td><a href="https://finance.naver.com/item/main.naver?code=360200" target="_blank" class="nlink">ACE S&P500 ↗</a></td><td><input type="number" id="q_irp_sp" value="90"></td><td><input type="number" id="a_irp_sp" value="16052"></td><td><input type="number" id="c_irp_sp"></td><td class="ep" id="ep_irp_sp">-</td></tr>
             <tr><td><a href="https://finance.naver.com/item/main.naver?code=251600" target="_blank" class="nlink">PLUS 고배당주채권혼합 ↗</a></td><td><input type="number" id="q_irp_div" value="186"></td><td><input type="number" id="a_irp_div" value="14008"></td><td><input type="number" id="c_irp_div"></td><td class="ep" id="ep_irp_div">-</td></tr>
             <tr><td style="color:#888;">예수금(원)</td><td colspan="4"><input type="number" id="cash_irp" value="16300"></td></tr>
           </tbody>
@@ -636,21 +636,8 @@ td.cv, td.ep { display: table-cell !important; vertical-align: middle; }
         <tbody id="income_monthly"></tbody>
       </table>
       </div>
-      <div style="font-size:12px;font-weight:800;color:#1e293b;margin-bottom:8px;margin-top:16px;">📅 연 1회 배당 (연말)</div>
-      <div style="overflow-x:auto;margin-bottom:4px;">
-      <table style="width:100%;border-collapse:collapse;font-size:11px;min-width:480px;">
-        <thead><tr style="background:#f1f5f9;">
-          <th style="padding:6px 8px;text-align:left;font-weight:700;color:#64748b;">종목</th>
-          <th style="padding:6px 8px;text-align:center;font-weight:700;color:#64748b;">계좌</th>
-          <th style="padding:6px 8px;text-align:right;font-weight:700;color:#64748b;">보유 수량</th>
-          <th style="padding:6px 8px;text-align:right;font-weight:700;color:#64748b;">분배금/주(원)</th>
-          <th style="padding:6px 8px;text-align:right;font-weight:700;color:#64748b;">연 예상</th>
-        </tr></thead>
-        <tbody id="income_annual"></tbody>
-      </table>
-      </div>
       <div style="background:#f0fdf4;border-radius:10px;padding:10px 14px;margin-top:14px;font-size:10px;color:#16a34a;line-height:1.7;">
-        💡 분기: KODEX 미국나스닥100·ACE 미국나스닥100·TIGER 미국S&P500·ACE 미국S&P500 (1·4·7·10월) &nbsp;|&nbsp; 월: KODEX 미국배당프리미엄액티브·PLUS 고배당주채권혼합 (매월) &nbsp;|&nbsp; 연 1회: TIGER 미국테크TOP10 INDXX (연말, 소액)
+        💡 분기: KODEX 미국나스닥100·ACE 미국나스닥100·TIGER 미국S&P500·ACE 미국S&P500 (1·4·7·10월) &nbsp;|&nbsp; 월: KODEX 미국배당프리미엄액티브·PLUS 고배당주채권혼합 (매월)
       </div>
     </div>
   </div>
@@ -736,7 +723,7 @@ const PRICE_MAP_KRX = [
   { code:'360750', ids:['c_isa_sp','c_dc_sp'], label:'TIGER 미국S&P500'          },
   { code:'441640', ids:['c_isa_cc'],           label:'KODEX 미국배당프리미엄액티브'},
   { code:'488770', ids:['c_isa_mm','c_dc_mm'], label:'KODEX 머니마켓액티브'       },
-  { code:'381170', ids:['c_irp_tech'],         label:'TIGER 미국테크TOP10 INDXX'  },
+  { code:'381170', ids:['c_irp_tech'],         label:'HANARO 미국테크TOP10'       },
   { code:'360200', ids:['c_irp_sp'],           label:'ACE 미국S&P500'            },
   { code:'251600', ids:['c_irp_div'],          label:'PLUS 고배당주채권혼합'      },
   { code:'367380', ids:['c_pen_nq'],           label:'ACE 미국나스닥100'          },
@@ -753,7 +740,7 @@ const catCol = {'S&P500':'#1D9E75','나스닥100':'#378ADD','반도체/AI/혁신
 const catDef = {'S&P500':20,'나스닥100':35,'반도체/AI/혁신':18,'배당/인컴':5,'개별/테마':5,'안전자산(TDF)':5,'안전자산(현금)':7,'실물/대안자산':5};
 const catItems = {
   'S&P500':         'TIGER 미국S&P500 (ISA) · TIGER 미국S&P500 (DC) · ACE 미국S&P500 (IRP)',
-  '나스닥100':       'KODEX 미국나스닥100 (ISA) · ACE 미국나스닥100 (연금저축) · TIGER 미국테크TOP10 INDXX (IRP) · QQXL (카카오페이) · TQQQ (카카오페이)',
+  '나스닥100':       'KODEX 미국나스닥100 (ISA) · ACE 미국나스닥100 (연금저축) · HANARO 미국테크TOP10 (IRP) · QQXL (카카오페이) · TQQQ (카카오페이)',
   '반도체/AI/혁신':  'PLUS 휴머노이드로봇 (DC) · TIGER AI데이터센터 (DC) · 1Q우주항공 (토스) · NVDA (토스) · SOXL (카카오페이)',
   '배당/인컴':       'KODEX 미국배당프리미엄액티브 (ISA) · PLUS 고배당주채권혼합 (IRP)',
   '개별/테마':       '로켓랩 RKLB (카카오페이) · CIBR (카카오페이)',
@@ -1385,9 +1372,7 @@ function updStrategy() {
     { name:'TIGER 미국S&P500',    acct:'DC',    qId:'q_dc_sp',   divPerShare:   65 },
     { name:'ACE 미국S&P500',      acct:'IRP',   qId:'q_irp_sp',  divPerShare:   62 },
     { name:'ACE 미국나스닥100',   acct:'연금저축', qId:'q_pen_nq', divPerShare:   80 },
-  ];
-  const annual = [
-    { name:'TIGER 미국테크TOP10 INDXX', acct:'IRP', qId:'q_irp_tech', divPerShare: 50 },
+    { name:'HANARO 미국테크TOP10', acct:'IRP',  qId:'q_irp_tech',divPerShare:   55 },
   ];
   const monthly = [
     { name:'KODEX 미국배당프리미엄액티브', acct:'ISA', qId:'q_isa_cc', divPerShare: 70 },
@@ -1411,10 +1396,8 @@ function updStrategy() {
 
   const qTbody = document.getElementById('income_quarterly');
   const mTbody = document.getElementById('income_monthly');
-  const aTbody = document.getElementById('income_annual');
   if (qTbody) qTbody.innerHTML = quarterly.map(i=>buildIncomeRow(i,'quarterly')).join('');
   if (mTbody) mTbody.innerHTML = monthly.map(i=>buildIncomeRow(i,'monthly')).join('');
-  if (aTbody) aTbody.innerHTML = annual.map(i=>buildIncomeRow(i,'annual')).join('');
 }
 
 // ─── 탭 전환 ───
@@ -1605,7 +1588,7 @@ function buildHistDetail(snap) {
     ], f.cash_dc, false, usd);
 
     html += buildHoldingsSec('IRP (한국투자증권)', [
-      { name:'TIGER 미국테크TOP10 INDXX', q:f.q_irp_tech, a:f.a_irp_tech, c:f.c_irp_tech },
+      { name:'HANARO 미국테크TOP10', q:f.q_irp_tech, a:f.a_irp_tech, c:f.c_irp_tech },
       { name:'ACE 미국S&P500', q:f.q_irp_sp, a:f.a_irp_sp, c:f.c_irp_sp },
       { name:'PLUS 고배당주채권혼합', q:f.q_irp_div, a:f.a_irp_div, c:f.c_irp_div },
     ], f.cash_irp, false, usd);
@@ -1773,8 +1756,6 @@ window.onload = async () => {
   renderInsurance();
   renderHistory();
   await loadFromGAS();
-  // GAS 로드 후 기준일은 항상 오늘 날짜로 재설정 (저장된 날짜가 덮어쓰지 않도록)
-  document.getElementById('baseDate').value = new Date().toISOString().slice(0,10);
   fetchPrices();
 };
 </script>
