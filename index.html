@@ -215,6 +215,110 @@ td.cv, td.ep { display: table-cell !important; vertical-align: middle; }
 .hd-sum-tbl th, .hd-sum-tbl td { padding: 6px 8px; text-align: right; font-weight: 700; }
 .hd-sum-tbl th  { color: #475569; }
 .hd-sum-tbl th:first-child, .hd-sum-tbl td:first-child { text-align: left; }
+
+/* ═══════════════════════════════════════════════════════════
+   📱 모바일 반응형: 현재가 입력 탭 → 카드 전환
+   ─ 640px 이하에서 테이블 행을 카드 형식으로 재구성
+   ─ 입력칸을 크게 만들어 터치 입력 최적화
+   ═══════════════════════════════════════════════════════════ */
+@media (max-width: 640px) {
+  /* 탭 — 여러 줄로 감싸지게 */
+  .tabs { flex-wrap: wrap; }
+  .tab  { padding: 7px 11px; font-size: 10.5px; }
+
+  /* overflow 래퍼 해제 (카드 형식이라 가로 스크롤 불필요) */
+  #tab-input .card > div[style*="overflow-x"] {
+    overflow-x: visible !important;
+  }
+
+  /* colgroup / thead 숨김 → data-label로 대체 */
+  #tab-input colgroup,
+  #tab-input thead {
+    display: none !important;
+  }
+
+  /* 테이블 전체를 블록으로 변환 */
+  #tab-input table,
+  #tab-input tbody,
+  #tab-input tr,
+  #tab-input td {
+    display: block !important;
+    width: 100% !important;
+  }
+
+  /* tr = 개별 카드 */
+  #tab-input tbody tr {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 10px 12px;
+    margin-bottom: 10px;
+    box-shadow: 0 2px 6px rgba(29,78,216,0.05);
+  }
+
+  /* td = 라벨+값이 한 줄씩 */
+  #tab-input tbody td {
+    padding: 7px 0 !important;
+    border-bottom: 1px solid #f1f5f9 !important;
+    font-size: 12px;
+    display: flex !important;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+  }
+  #tab-input tbody td:last-child {
+    border-bottom: none !important;
+  }
+
+  /* 첫 번째 td (종목명/항목명) = 카드 제목 스타일 */
+  #tab-input tbody td:first-child {
+    font-weight: 800 !important;
+    font-size: 13.5px !important;
+    color: var(--primary) !important;
+    border-bottom: 2px solid #dbeafe !important;
+    padding: 4px 0 8px !important;
+    margin-bottom: 4px;
+    display: block !important;
+  }
+
+  /* data-label 있는 td → 라벨 표시 */
+  #tab-input tbody td[data-label]::before {
+    content: attr(data-label);
+    font-size: 10.5px;
+    color: #64748b;
+    font-weight: 700;
+    flex-shrink: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+
+  /* 입력칸 크기 확대 (모바일 터치 최적화) */
+  #tab-input tbody td input[type=number],
+  #tab-input tbody td input[type=text],
+  #tab-input tbody td input[type=date] {
+    padding: 10px 12px !important;
+    font-size: 14px !important;
+    min-height: 42px;
+    text-align: right;
+    flex: 1;
+    max-width: 65%;
+    font-weight: 700;
+  }
+
+  /* 평가금액·수익률(cv / ep) 셀 */
+  #tab-input tbody td.cv,
+  #tab-input tbody td.ep {
+    font-size: 13px !important;
+    padding: 9px 12px !important;
+    max-width: 65%;
+    margin-left: auto;
+  }
+
+  /* colspan이 걸린 td (예수금 등) = 전체 폭 입력 */
+  #tab-input tbody td[colspan] input {
+    max-width: 100% !important;
+  }
+}
 </style>
 </head>
 <body>
@@ -265,12 +369,12 @@ td.cv, td.ep { display: table-cell !important; vertical-align: middle; }
         <div class="ct"><span class="badge bs">저축 / 비상금</span></div>
         <table><thead><tr><th>항목</th><th>금액(원)</th><th>만기/조건</th><th>목적</th></tr></thead>
           <tbody>
-            <tr><td>신협 예금</td><td><input type="number" id="dep" value="30000000"></td><td><input type="text" id="dep_d" value="2027-01-29"></td><td style="font-size:10px;color:#888;">저율과세 1.4%</td></tr>
-            <tr><td>토스적금</td><td><input type="number" id="sav" value="21300000"></td><td><input type="text" id="sav_d" value="2026-08-09"></td><td style="font-size:10px;color:#888;">월 5만(연5%)</td></tr>
-            <tr><td>청약통장</td><td><input type="number" id="chq" value="8660000"></td><td style="font-size:10px;color:#888;">월 10만</td><td style="font-size:10px;color:#888;">우대금리</td></tr>
-            <tr><td>카카오(5%)</td><td><input type="number" id="emg1" value="300000"></td><td style="font-size:10px;color:#888;">한도 30만</td><td style="font-size:10px;color:#888;">비상금</td></tr>
-            <tr><td>우리CMA(4%)</td><td><input type="number" id="emg2" value="2000000"></td><td style="font-size:10px;color:#888;">한도 200만</td><td style="font-size:10px;color:#888;">비상금</td></tr>
-            <tr><td>미래에셋(2.5%)</td><td><input type="number" id="emg3" value="1033763"></td><td style="font-size:10px;color:#888;">한도 1,000만</td><td style="font-size:10px;color:#888;">비상금</td></tr>
+            <tr><td>신협 예금</td><td data-label="금액(원)"><input type="number" id="dep" value="30000000"></td><td data-label="만기"><input type="text" id="dep_d" value="2027-01-29"></td><td data-label="목적" style="font-size:10px;color:#888;">저율과세 1.4%</td></tr>
+            <tr><td>토스적금</td><td data-label="금액(원)"><input type="number" id="sav" value="21300000"></td><td data-label="만기"><input type="text" id="sav_d" value="2026-08-09"></td><td data-label="목적" style="font-size:10px;color:#888;">월 5만(연5%)</td></tr>
+            <tr><td>청약통장</td><td data-label="금액(원)"><input type="number" id="chq" value="8660000"></td><td data-label="조건" style="font-size:10px;color:#888;">월 10만</td><td data-label="목적" style="font-size:10px;color:#888;">우대금리</td></tr>
+            <tr><td>카카오(5%)</td><td data-label="금액(원)"><input type="number" id="emg1" value="300000"></td><td data-label="한도" style="font-size:10px;color:#888;">한도 30만</td><td data-label="목적" style="font-size:10px;color:#888;">비상금</td></tr>
+            <tr><td>우리CMA(4%)</td><td data-label="금액(원)"><input type="number" id="emg2" value="2000000"></td><td data-label="한도" style="font-size:10px;color:#888;">한도 200만</td><td data-label="목적" style="font-size:10px;color:#888;">비상금</td></tr>
+            <tr><td>미래에셋(2.5%)</td><td data-label="금액(원)"><input type="number" id="emg3" value="1033763"></td><td data-label="한도" style="font-size:10px;color:#888;">한도 1,000만</td><td data-label="목적" style="font-size:10px;color:#888;">비상금</td></tr>
           </tbody>
         </table>
       </div>
@@ -785,14 +889,15 @@ const PRICE_MAP_KRX = [
   { code:'379810', ids:['c_isa_nq'],           label:'KODEX 미국나스닥100'       },
   { code:'360750', ids:['c_isa_sp','c_dc_sp'], label:'TIGER 미국S&P500'          },
   { code:'441640', ids:['c_isa_cc'],           label:'KODEX 미국배당커버드콜액티브'},
-  { code:'488770', ids:['c_isa_mm','c_dc_mm'], label:'KODEX 머니마켓액티브'       },
+  { code:'488770', ids:['c_isa_mm'],           label:'KODEX 머니마켓액티브'       },
   { code:'381170', ids:['c_irp_tech'],         label:'TIGER 미국테크TOP10 INDXX'  },
   { code:'360200', ids:['c_irp_sp'],           label:'ACE 미국S&P500'            },
   { code:'251600', ids:['c_irp_div'],          label:'PLUS 고배당주채권혼합'      },
   { code:'367380', ids:['c_pen_nq'],           label:'ACE 미국나스닥100'          },
-  { code:'0035T0', ids:['c_dc_hum'],           label:'PLUS 글로벌휴머노이드로봇액티브'        },  // ← 누락 추가
-  { code:'0142D0', ids:['c_dc_ai'],            label:'TIGER 미국AI데이터센터'         },  // ← 누락 추가
-  { code:'0131V0', ids:['c_toss'],             label:'1Q 미국우주항공데크'                 },  // ← 누락 추가
+  { code:'0035T0', ids:['c_dc_hum'],           label:'PLUS 글로벌휴머노이드로봇액티브'        },
+  { code:'0142D0', ids:['c_dc_ai'],            label:'TIGER 미국AI데이터센터'         },
+  { code:'0177N0', ids:['c_dc_mm'],            label:'KODEX 삼성전자SK하이닉스채권혼합50'     },  // ← c_dc_mm 재매핑
+  { code:'0131V0', ids:['c_toss'],             label:'1Q 미국우주항공데크'                 },
 ];
 
 // ─── 유틸 ───
@@ -1026,7 +1131,7 @@ function renderInputCards() {
     acct.holdings.forEach(h => {
       // 고정 평가금액 입력 (TDF 등) — q/a 없음
       if (h.isFixed) {
-        rows += `<tr><td>${h.name}</td><td colspan="2">-</td><td>${inp(h.c, h.defC)}</td><td class="cv" id="${h.ev}">-</td><td>-</td></tr>`;
+        rows += `<tr><td>${h.name}</td><td colspan="2">-</td><td data-label="평가금액 입력">${inp(h.c, h.defC)}</td><td class="cv" data-label="현재 평가" id="${h.ev}">-</td><td>-</td></tr>`;
         return;
       }
       const qInput = inp(h.q, h.defQ, h.qStep);
@@ -1035,12 +1140,13 @@ function renderInputCards() {
       const nameTd = `<td>${nameCell(h)}</td>`;
 
       if (acct.layout === 'split') {
-        rows += `<tr>${nameTd}<td>${qInput}</td><td>${aInput}</td><td>${cInput}</td><td class="cv" id="${h.ev}">-</td><td class="cv" id="${h.pc}">-</td></tr>`;
+        rows += `<tr>${nameTd}<td data-label="주수">${qInput}</td><td data-label="매입단가">${aInput}</td><td data-label="현재가">${cInput}</td><td class="cv" data-label="평가금액" id="${h.ev}">-</td><td class="cv" data-label="수익률" id="${h.pc}">-</td></tr>`;
       } else if (acct.layout === 'combined') {
-        rows += `<tr>${nameTd}<td>${qInput}</td><td>${aInput}</td><td>${cInput}</td><td class="ep" id="${h.ep}">-</td></tr>`;
+        const unitLabel = acct.currency === 'usd' ? '($)' : '';
+        rows += `<tr>${nameTd}<td data-label="주수">${qInput}</td><td data-label="매입가${unitLabel}">${aInput}</td><td data-label="현재가${unitLabel}">${cInput}</td><td class="ep" data-label="평가/수익률" id="${h.ep}">-</td></tr>`;
       } else if (acct.layout === 'gold') {
         // 금현물: 평가/수익률 컬럼 없음
-        rows += `<tr>${nameTd}<td>${qInput}</td><td>${aInput}</td><td>${cInput}</td></tr>`;
+        rows += `<tr>${nameTd}<td data-label="수량(g)">${qInput}</td><td data-label="매입가">${aInput}</td><td data-label="현재가(/g)">${cInput}</td></tr>`;
       }
     });
 
@@ -1048,11 +1154,11 @@ function renderInputCards() {
     const c = acct.cash;
     const cashInput = inp(c.id, c.def, c.step);
     if (acct.layout === 'split') {
-      rows += `<tr><td colspan="4" style="color:#888;">${c.label}</td><td colspan="2">${cashInput}</td></tr>`;
+      rows += `<tr><td colspan="4" style="color:#888;">${c.label}</td><td colspan="2" data-label="금액">${cashInput}</td></tr>`;
     } else if (acct.layout === 'gold') {
-      rows += `<tr><td style="color:#888;">${c.label}</td><td colspan="3">${cashInput}</td></tr>`;
+      rows += `<tr><td style="color:#888;">${c.label}</td><td colspan="3" data-label="금액">${cashInput}</td></tr>`;
     } else {
-      rows += `<tr><td style="color:#888;">${c.label}</td><td colspan="4">${cashInput}</td></tr>`;
+      rows += `<tr><td style="color:#888;">${c.label}</td><td colspan="4" data-label="금액">${cashInput}</td></tr>`;
     }
 
     return `<div class="card">
