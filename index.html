@@ -1579,7 +1579,8 @@ async function loadFromGAS() {
           if (el) el.value = json.data[id];
         }
       });
-      setSyncStatus('✅ 동기화 완료: ' + new Date().toLocaleTimeString('ko-KR'));
+    setSyncStatus('✅ 동기화 완료: ' + new Date().toLocaleTimeString('ko-KR'));
+      calcAll._skipRemoteSave = true;   // ✅ 방금 받은 값을 되저장하지 않음
       calcAll();
     } else {
       setSyncStatus('⚠️ 저장 데이터 없음 — 기본값 사용');
@@ -1728,8 +1729,12 @@ async function fetchPrices() {
 // ─── 수익률 계산 헬퍼 ───
 function ci(q, a, c, usd, rate) {
   const qty=g(q), avg=g(a), cur=g(c);
-  const cost=qty*avg, eval_=cur>0?qty*cur:0, pnl=eval_-cost, pct=cost>0?pnl/cost*100:0;
-  return { cost:usd?cost*rate:cost, eval:usd?eval_*rate:eval_, pnl:usd?pnl*rate:pnl, has:eval_>0, pct };
+  const has = cur > 0 && qty > 0;
+  const cost  = has ? qty*avg : 0;           // ✅ 시세 없으면 원가도 제외 (쌍수 일치)
+  const eval_ = has ? qty*cur : 0;
+  const pnl = eval_ - cost;
+  const pct = cost > 0 ? pnl/cost*100 : 0;
+  return { cost:usd?cost*rate:cost, eval:usd?eval_*rate:eval_, pnl:usd?pnl*rate:pnl, has, pct };
 }
 
 // ─── 전체 계산 (데이터 주도 — ACCOUNTS 스키마 기반) ───
@@ -1769,11 +1774,12 @@ function calcAll() {
       if (el) el.textContent = fmt(val) + '원';
     });
 
-    // ③ 예수금
+  // ③ 예수금 — 손익 중립이므로 cost·eval·catCost 모두 동일액 반영
     const cashVal = g(acct.cash.id) * (acct.cash.usd ? rate : 1);
     acctEval += cashVal;
-    if (acct.costIncludesCash) acctCost += cashVal;
+    acctCost += cashVal;                                   // ✅ 계좌 수익률 왜곡 수정
     D.cat[acct.cash.cat] += cashVal;
+    D.catCost[acct.cash.cat] += cashVal;                   // ✅ 카테고리 원가에도 동기화
     if (acct.cash.usd) { D.usdExposureKRW += cashVal; directUsdKRW += cashVal; }
 
     D.a[acct.key] = { cost: acctCost, eval: acctEval };
@@ -1787,9 +1793,10 @@ function calcAll() {
   D.grand    = D.tE + D.sav.total;
   D.totalUSD = directUsdKRW / rate;
 
-  calcMonthlyIncome(); updSummary(); updIncomeDashboard(); updWt(); makeExport();
+ calcMonthlyIncome(); updSummary(); updIncomeDashboard(); updWt(); makeExport();
   saveLocal();   // 로컬 캐시에 먼저 저장 (오프라인에서도 복원 가능)
-  saveToGAS();
+  if (!calcAll._skipRemoteSave) saveToGAS();   // ✅ loadFromGAS 직후엔 서버 저장 생략
+  calcAll._skipRemoteSave = false;
   showTab('summary', 1);
 }
 
@@ -2341,9 +2348,10 @@ function updStrategy() {
   }
 
   // ③ 연말정산 절세 한도 트래커
-  // 납입 기준: 올해 경과 월 수 × 연금저축 50만 / IRP 25만 (추정)
+  // 납입 기준: "완료된 월 수" × 연금저축 10만 / IRP 10만 (추정)
   const now = new Date();
-  const monthsPassed = now.getMonth(); // 0~11 (경과 월수)
+  // ✅ 당월 1일이 지났으면 당월 납입 포함 → 1~12 범위
+  const monthsPassed = now.getMonth() + (now.getDate() >= 1 ? 1 : 0);
   const penPaid  = monthsPassed * 100000;   // 연금저축 월 10만
   const irpPaid  = monthsPassed * 100000;   // IRP 월 10만 (합산용)
   const combPaid = penPaid + irpPaid;
@@ -2462,8 +2470,8 @@ function updIncomeDashboard() {
   if (mTbody) mTbody.innerHTML = INCOME_MONTHLY.map(i=>buildIncomeRow(i)).join('');
   if (aTbody) aTbody.innerHTML = INCOME_ANNUAL.map(i=>buildIncomeRow(i)).join('');
 
-  // 이번달 배지 갱신
-  const { total: monthTotal } = calcMonthlyIncome();
+  // 이번달 배지 갱신 — calcAll에서 이미 계산했으므로 재사용
+  const monthTotal = D.incomeMonthly || 0;
   const nowMonth = new Date().getMonth() + 1;
   const badge = document.getElementById('income_month_badge');
   if (badge) {
@@ -2478,12 +2486,15 @@ function updIncomeDashboard() {
 //   2: insurance(보장자산)  3: plan(2030로드맵=계획+전략절세)
 //   4: retirement(퇴직연금) 5: history(기록&내보내기=히스토리+AI복사)
 function showTab(name, idx) {
+  const sec  = document.getElementById('tab-'+name);
+  const tabs = document.querySelectorAll('.tab');
+  if (!sec || !tabs[idx]) return;                                  // ✅ 존재 확인
   document.querySelectorAll('.sec').forEach(s=>s.classList.remove('active'));
-  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-  document.getElementById('tab-'+name).classList.add('active');
-  document.querySelectorAll('.tab')[idx].classList.add('active');
+  tabs.forEach(t=>t.classList.remove('active'));
+  sec.classList.add('active');
+  tabs[idx].classList.add('active');
   if (name==='history') renderHistory();
-  if (name==='plan') updStrategy();       // 전략&절세가 plan에 통합됨
+  if (name==='plan') updStrategy();
   if (name==='retirement') initRetirementTab();
 }
 
@@ -2823,17 +2834,24 @@ function makeExport() {
   const date = document.getElementById('baseDate').value;
   const rate = g('usdRate');
   const now  = new Date();
-  const months   = Math.max(0, Math.round((new Date(2030,11,31)-now)/(1000*60*60*24*30.5)));
-  const years    = months / 12;
-  // ✅ 거치식 + 적립식 이자 분리 계산 (연 단리 2%)
-  const RATE_ANNUAL = 0.02;
-  const MONTHLY_SAV = 1310000;
-  const accSav    = MONTHLY_SAV * months;
-  const intLump   = Math.round((D.grand||0) * RATE_ANNUAL * years);
-  const intMonth  = Math.round(MONTHLY_SAV * RATE_ANNUAL * months * (months + 1) / 24);
-  const simReturn = intLump + intMonth;
-  const principal = (D.grand||0) + accSav;
-  const future    = principal + simReturn;
+
+  // ✅ updSummary와 동일한 월 복리식 — 가변 저축액·수익률 반영 (화면/복사본 정합성)
+  const RATE_ANNUAL = parseFloat(document.getElementById('sim_rate')?.value) || 0.05;
+  const BASE_SAV    = parseFloat(document.getElementById('base_monthly_sav')?.value) || 1310000;
+  const EXTRA_SAV   = parseFloat(document.getElementById('extra_monthly')?.value) || 0;
+  const PMT     = BASE_SAV + EXTRA_SAV;
+  const r       = RATE_ANNUAL / 12;
+  const months  = Math.max(0, Math.round((new Date(2030,11,31)-now)/(1000*60*60*24*30.5)));
+  const years   = months / 12;
+  const accSav  = PMT * months;
+  const P       = D.grand || 0;
+  const growth    = Math.pow(1 + r, months);
+  const fvLump    = P * growth;
+  const fvAnnuity = r > 0 ? PMT * ((growth - 1) / r) : PMT * months;
+  const future    = Math.round(fvLump + fvAnnuity);
+  const simReturn = future - (P + accSav);
+  const intLump   = Math.round(fvLump - P);
+  const intMonth  = simReturn - intLump;
   const gap       = 300000000 - future;
   const catTotal  = D.cat ? Object.values(D.cat).reduce((a,b)=>a+b,0) : 0;
 
@@ -2859,11 +2877,11 @@ function makeExport() {
       const diff = catTotal>0?(val/catTotal*100-catDef[cat]).toFixed(1):0;
       return `▶ ${cat}: ${fmt(val)}원 (${pct}%) / 목표 ${catDef[cat]}% / 괴리 ${diff>0?'+':''}${diff}%`;
     }),``,
-    `══ 2030 시뮬레이션 (연 단리 2% 가정) ══`,
-    `▶ 현재 자산: ${fmt(D.grand)}원`,
-    `▶ 누적 저축 원금: ${fmt(accSav)}원 (월 131만 × ${months}개월)`,
-    `▶ 거치 이자 (현재자산 × 2% × ${years.toFixed(1)}년): +${fmt(intLump)}원`,
-    `▶ 적립 이자 (월저축 월단리 공식): +${fmt(intMonth)}원`,
+    `══ 2030 시뮬레이션 (연 ${(RATE_ANNUAL*100).toFixed(0)}% 월복리 · 월 ${fmt(PMT)}원 적립) ══`,
+    `▶ 현재 자산: ${fmt(P)}원`,
+    `▶ 누적 저축 원금: ${fmt(accSav)}원 (월 ${fmt(PMT)} × ${months}개월)`,
+    `▶ 거치 복리 수익 (현재자산 × ${(RATE_ANNUAL*100).toFixed(0)}% × ${years.toFixed(1)}년): +${fmt(intLump)}원`,
+    `▶ 적립 복리 수익: +${fmt(intMonth)}원`,
     `▶ 예상 수익 합계: +${fmt(simReturn)}원`,
     `▶ 2030.12.31 예상 자산: ${fmt(future)}원`,
     gap>0?`▶ 목표 부족분: ${fmt(gap)}원`:`▶ 목표 달성 예상! 여유분: ${fmt(-gap)}원`,``,
@@ -2976,22 +2994,25 @@ function todayKST() {
 // ═══════════════════════════════════════════════════════════
 
 function initRetirementTab() {
+  const initEl = document.getElementById('ret_initial');
+  if (!initEl) return;                                             // ✅ 탭 DOM 없으면 조용히 종료
   // 탭 열릴 때 현재 연금저축+IRP 평가액을 초기값으로 설정
   if (D && D.a) {
     const irp = (D.a.IRP || {eval:0}).eval || 0;
     const pen = (D.a.연금저축 || {eval:0}).eval || 0;
     const total = irp + pen;
-    if (total > 0) {
-      document.getElementById('ret_initial').value = Math.round(total);
-    }
+    if (total > 0) initEl.value = Math.round(total);
   }
   calcRetirement();
 }
 
 function calcRetirement() {
-  const initial = parseFloat(document.getElementById('ret_initial').value) || 0;
+  const initEl = document.getElementById('ret_initial');
+  const rateEl = document.getElementById('ret_annual_rate');
+  if (!initEl || !rateEl) return;                                  // ✅ 탭 DOM 없으면 종료
+  const initial = parseFloat(initEl.value) || 0;
   const monthlyInput = 200000;
-  const annualRate = parseFloat(document.getElementById('ret_annual_rate').value) || 5.43;
+  const annualRate = parseFloat(rateEl.value) || 5.43;
 
   // 월간 수익률 계산
   const monthlyRate = Math.pow(1 + annualRate/100, 1/12) - 1;
