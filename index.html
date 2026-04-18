@@ -97,6 +97,16 @@ td.cv, td.ep { display: table-cell !important; vertical-align: middle; }
 .hist-pos { color:#10b981; font-weight:700; }
 .hist-neg { color:#ef4444; font-weight:700; }
 
+/* ── 로드맵 편집 모드 ── */
+.tl-edit-wrap { background:#fff; border:1.5px solid #a7f3d0; border-radius:12px; padding:12px 14px; margin-bottom:14px; }
+.tl-edit-label { font-size:10px; color:#64748b; font-weight:700; margin-bottom:3px; text-transform:uppercase; letter-spacing:0.3px; }
+.tl-edit-input { width:100%; border:1.5px solid #d1fae5; border-radius:8px; padding:6px 10px; font-size:12px; font-weight:700; color:#1e293b; background:#f0fdf4; outline:none; margin-bottom:8px; transition:0.2s; }
+.tl-edit-input:focus { border-color:#10b981; box-shadow:0 0 0 3px rgba(16,185,129,0.12); }
+.tl-edit-textarea { width:100%; border:1.5px solid #d1fae5; border-radius:8px; padding:7px 10px; font-size:11px; color:#1e293b; background:#f0fdf4; outline:none; resize:vertical; min-height:64px; font-family:inherit; line-height:1.6; transition:0.2s; }
+.tl-edit-textarea:focus { border-color:#10b981; box-shadow:0 0 0 3px rgba(16,185,129,0.12); }
+.tl-edit-goal-wrap { display:flex; align-items:center; gap:6px; margin-bottom:8px; font-size:11px; color:#065f46; font-weight:700; }
+.tl-edit-goal-wrap input[type=checkbox] { width:15px; height:15px; accent-color:#10b981; cursor:pointer; }
+
 /* 히스토리 — 모바일/데스크톱 뷰 전환 */
 .hist-mobile-cards { display:none; }
 .hist-desktop-table { display:block; }
@@ -319,6 +329,137 @@ td.cv, td.ep { display: table-cell !important; vertical-align: middle; }
     max-width: 100% !important;
   }
 }
+
+/* ╔══════════════════════════════════════════════════════════════╗
+   ║  UI PATCH v1 — 아코디언 · 모바일 · 액션 하이라이팅          ║
+   ╚══════════════════════════════════════════════════════════════╝ */
+
+/* ── ① 아코디언 ────────────────────────────────────────────── */
+.card.ac > .ct {
+  cursor: pointer;
+  user-select: none;
+  position: relative;
+  padding-right: 28px;
+  transition: background 0.15s;
+}
+.card.ac > .ct::after {
+  content: '▲';
+  position: absolute;
+  right: 2px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 9px;
+  color: #cbd5e1;
+  transition: transform 0.22s ease, color 0.15s;
+  pointer-events: none;
+}
+.card.ac.cl > .ct::after {
+  transform: translateY(-50%) rotate(180deg);
+}
+.card.ac.cl > *:not(.ct) {
+  display: none !important;
+}
+.card.ac > .ct:hover {
+  background: rgba(29,78,216,0.03);
+  border-radius: 8px;
+}
+.card.ac > .ct:hover::after { color: var(--primary); }
+
+/* ── ② 모바일 가독성 개선 (640px 이하) ─────────────────────── */
+@media (max-width: 640px) {
+  /* 요약 메트릭 수치 */
+  .mv { font-size: 17px !important; }
+  .ms { font-size: 9.5px !important; }
+
+  /* 예상 인컴 대시보드 테이블 */
+  #tab-summary .card table td,
+  #tab-summary .card table th {
+    padding: 5px !important;
+    font-size: 10px !important;
+  }
+
+  /* 현금흐름 테이블 */
+  .cf-table td {
+    font-size: 10px !important;
+    padding: 7px 6px !important;
+  }
+  .cf-table td br { display: none; }
+
+  /* 시뮬레이터 결과 박스 → 세로 스택 */
+  #tab-plan .card > div[style*="padding:18px"] {
+    flex-direction: column !important;
+    gap: 10px !important;
+    text-align: center !important;
+  }
+  /* 연산자 구분자(+ / =) 숨김 */
+  #tab-plan .card > div[style*="padding:18px"] > div[style*="22px"] {
+    display: none !important;
+  }
+
+  /* 구매력 계산기 3열 → 2열 */
+  #tab-plan div[style*="grid-template-columns:1fr 1fr 1fr"] {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  /* 리밸런싱 테이블 모바일 */
+  #rebalance_card { overflow-x: auto; }
+  #rebalance_table { font-size: 10px !important; }
+  #rebalance_table td,
+  #rebalance_table th { padding: 5px 4px !important; }
+
+  /* 아코디언 화살표 위치 보정 */
+  .card.ac > .ct { padding-right: 24px; }
+}
+
+/* ── ③ 액션 하이라이팅 ──────────────────────────────────────── */
+
+/* 리밸런싱 가이드 카드 — 그린 어텐션 보더 + 배경 */
+#rebalance_card {
+  border: 1.5px solid rgba(16,185,129,0.5) !important;
+  box-shadow: 0 0 0 4px rgba(16,185,129,0.07),
+              0 4px 16px rgba(29,78,216,0.06) !important;
+  background: linear-gradient(135deg, #ffffff 60%, #f0fdf4) !important;
+}
+#rebalance_card > .ct { color: #065f46; }
+
+/* 리밸런싱 카드 제목 — 라이브 펄스 도트 */
+#rebalance_card > .ct::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10b981;
+  margin-right: 6px;
+  vertical-align: middle;
+  animation: reb-pulse 1.8s ease-in-out infinite;
+}
+@keyframes reb-pulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(16,185,129,0.5); }
+  50%       { opacity: 0.7; box-shadow: 0 0 0 5px rgba(16,185,129,0); }
+}
+
+/* 목표 부족분 — 붉은 경고 박스 */
+#sim_gap:not(:empty) {
+  display: block;
+  background: #fef2f2;
+  border: 1.5px solid #fca5a5;
+  border-radius: 10px;
+  padding: 10px 16px !important;
+  color: #dc2626 !important;
+  font-size: 12px !important;
+  font-weight: 800 !important;
+  margin-top: 12px;
+}
+
+/* 주택자금 부족분 강조 */
+#house_gap:not(:empty) {
+  font-weight: 800 !important;
+  color: #b45309 !important;
+}
+
+/* 총자산 진행률 텍스트 */
+#goalText { font-weight: 800 !important; }
 </style>
 </head>
 <body>
@@ -337,14 +478,12 @@ td.cv, td.ep { display: table-cell !important; vertical-align: middle; }
   </div>
 
   <div class="tabs">
-    <button class="tab active" onclick="showTab('input',0)">현재가 입력</button>
-    <button class="tab" onclick="showTab('summary',1)">요약 & 목표</button>
-    <button class="tab" onclick="showTab('weight',2)">자산군 비중</button>
-    <button class="tab" onclick="showTab('insurance',3)">보장 자산(보험)</button>
-    <button class="tab" onclick="showTab('plan',4)">향후 계획</button>
-    <button class="tab" onclick="showTab('strategy',5)">전략 &amp; 절세</button>
-    <button class="tab" onclick="showTab('history',6)">히스토리</button>
-    <button class="tab" onclick="showTab('export',7)">AI 상담용 복사</button>
+    <button class="tab active" onclick="showTab('input',0)">📡 주간 업데이트</button>
+    <button class="tab" onclick="showTab('summary',1)">📊 포트폴리오 점검</button>
+    <button class="tab" onclick="showTab('insurance',2)">🛡️ 보장 자산</button>
+    <button class="tab" onclick="showTab('plan',3)">🎯 2030 로드맵</button>
+    <button class="tab" onclick="showTab('retirement',4)">🧓 노후 자금</button>
+    <button class="tab" onclick="showTab('history',5)">📁 기록 &amp; 내보내기</button>
   </div>
 
   <!-- ══ 탭 0: 현재가 입력 ══ -->
@@ -380,8 +519,20 @@ td.cv, td.ep { display: table-cell !important; vertical-align: middle; }
       </div>
   </div>
 
-  <!-- ══ 탭 1: 요약 & 목표 ══ -->
+  <!-- ══ 탭 1: 포트폴리오 점검 (요약&목표 + 자산군 비중 통합) ══ -->
   <div id="tab-summary" class="sec">
+    <!-- 자산 타임라인 — 2030 목표 컨텍스트 -->
+    <div class="card" style="border:1.5px solid var(--secondary);background:linear-gradient(135deg,#f0fdf4,#ecfdf5);">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <div class="ct" style="color:#065f46;margin-bottom:0;">📅 2030 로드맵 — 핵심 이정표</div>
+        <div style="display:flex;gap:6px;">
+          <button id="roadmap-edit-btn" class="btn-p btn-sm" style="background:#065f46;" onclick="toggleRoadmapEdit()">✏️ 수정</button>
+          <button id="roadmap-save-btn" class="btn-p btn-sm" style="display:none;background:#1D4ED8;" onclick="saveRoadmap()">💾 저장</button>
+          <button id="roadmap-cancel-btn" class="btn-p btn-sm" style="display:none;background:#64748b;" onclick="cancelRoadmapEdit()">✕ 취소</button>
+        </div>
+      </div>
+      <div id="roadmap-timeline" class="timeline"></div>
+    </div>
     <!-- 1행: 총 자산 + 환율하락 + 배당인컴 -->
     <div class="mgrid">
       <div class="mc" style="grid-column:span 2;background:linear-gradient(135deg,#1D4ED8,#3B82F6);color:#fff;">
@@ -401,7 +552,7 @@ td.cv, td.ep { display: table-cell !important; vertical-align: middle; }
       <div class="mc">
         <div class="ml">월 예상 배당 인컴</div>
         <div class="mv" id="s_income" style="color:#10b981;">-</div>
-        <div class="ms">배당/이자 자산 기반</div>
+        <div class="ms">실제 수량 × 분배금 기반</div>
       </div>
     </div>
     <!-- 2행: 투자 포트폴리오 / 총 손익 / 전체 수익률 / 저축+비상금 -->
@@ -427,6 +578,56 @@ td.cv, td.ep { display: table-cell !important; vertical-align: middle; }
         <div class="ms">예금·적금·CMA 합계</div>
       </div>
     </div>
+    <!-- 💸 예상 인컴 대시보드 -->
+    <div class="card">
+      <div class="ct">💸 예상 인컴 대시보드
+        <button onclick="resetDivDefaults()" style="margin-left:8px;background:#64748b;color:#fff;border:none;border-radius:8px;font-size:10px;font-weight:700;padding:4px 10px;cursor:pointer;">🔄 기본값 초기화</button>
+        <span id="income_month_badge" style="margin-left:auto;background:#d1fae5;color:#065f46;font-size:11px;font-weight:800;padding:5px 14px;border-radius:12px;white-space:nowrap;">이번달 예상 —</span>
+      </div>
+      <div style="font-size:10px;color:#94a3b8;margin-bottom:14px;">⚡ 전체 계산 실행 후 보유 수량 자동 반영 · 분배금/주는 직접 수정 가능하며 새로고침 후에도 유지됩니다</div>
+      <div style="font-size:12px;font-weight:800;color:#1e293b;margin-bottom:8px;">📅 분기 배당 (1·4·7·10월)</div>
+      <div style="overflow-x:auto;margin-bottom:16px;">
+        <table style="width:100%;border-collapse:collapse;font-size:11px;min-width:480px;">
+          <thead><tr style="background:#f1f5f9;">
+            <th style="padding:6px 8px;text-align:left;font-weight:700;color:#64748b;">종목</th>
+            <th style="padding:6px 8px;text-align:center;font-weight:700;color:#64748b;">계좌</th>
+            <th style="padding:6px 8px;text-align:right;font-weight:700;color:#64748b;">보유 수량</th>
+            <th style="padding:6px 8px;text-align:right;font-weight:700;color:#64748b;">분배금/주(원)</th>
+            <th style="padding:6px 8px;text-align:right;font-weight:700;color:#64748b;">분기 예상</th>
+          </tr></thead>
+          <tbody id="income_quarterly"></tbody>
+        </table>
+      </div>
+      <div style="font-size:12px;font-weight:800;color:#1e293b;margin-bottom:8px;">📅 월 배당 (매월)</div>
+      <div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;font-size:11px;min-width:480px;">
+          <thead><tr style="background:#f1f5f9;">
+            <th style="padding:6px 8px;text-align:left;font-weight:700;color:#64748b;">종목</th>
+            <th style="padding:6px 8px;text-align:center;font-weight:700;color:#64748b;">계좌</th>
+            <th style="padding:6px 8px;text-align:right;font-weight:700;color:#64748b;">보유 수량</th>
+            <th style="padding:6px 8px;text-align:right;font-weight:700;color:#64748b;">분배금/주(원)</th>
+            <th style="padding:6px 8px;text-align:right;font-weight:700;color:#64748b;">월 예상</th>
+          </tr></thead>
+          <tbody id="income_monthly"></tbody>
+        </table>
+      </div>
+      <div style="font-size:12px;font-weight:800;color:#1e293b;margin-bottom:8px;margin-top:16px;">📅 연 1회 배당 (연말)</div>
+      <div style="overflow-x:auto;margin-bottom:4px;">
+        <table style="width:100%;border-collapse:collapse;font-size:11px;min-width:480px;">
+          <thead><tr style="background:#f1f5f9;">
+            <th style="padding:6px 8px;text-align:left;font-weight:700;color:#64748b;">종목</th>
+            <th style="padding:6px 8px;text-align:center;font-weight:700;color:#64748b;">계좌</th>
+            <th style="padding:6px 8px;text-align:right;font-weight:700;color:#64748b;">보유 수량</th>
+            <th style="padding:6px 8px;text-align:right;font-weight:700;color:#64748b;">분배금/주(원)</th>
+            <th style="padding:6px 8px;text-align:right;font-weight:700;color:#64748b;">연 예상</th>
+          </tr></thead>
+          <tbody id="income_annual"></tbody>
+        </table>
+      </div>
+      <div style="background:#f0fdf4;border-radius:10px;padding:10px 14px;margin-top:14px;font-size:10px;color:#16a34a;line-height:1.7;">
+        💡 분기: KODEX 미국나스닥100·ACE 미국나스닥100·TIGER 미국S&P500·ACE 미국S&P500 (1·4·7·10월) &nbsp;|&nbsp; 월: KODEX 미국배당커버드콜액티브·PLUS 고배당주채권혼합 (매월) &nbsp;|&nbsp; 연 1회: TIGER 미국테크TOP10 INDXX (연말, 소액)
+      </div>
+    </div>
     <!-- 계좌별 현황 -->
     <div class="card">
       <div class="ct">계좌별 상세 현황</div>
@@ -434,10 +635,7 @@ td.cv, td.ep { display: table-cell !important; vertical-align: middle; }
         <table id="acct_rows" style="min-width:480px;"></table>
       </div>
     </div>
-  </div>
-
-  <!-- ══ 탭 2: 자산군 비중 ══ -->
-  <div id="tab-weight" class="sec">
+    <!-- ── 자산군 비중 (통합) ── -->
     <div class="card">
       <div class="ct">자산군별 비중 — 실제 vs 목표</div>
       <!-- SVG 도넛 차트 (바닐라 JS로 생성, 반응형) -->
@@ -474,6 +672,9 @@ td.cv, td.ep { display: table-cell !important; vertical-align: middle; }
       </div>
     </div>
   </div>
+
+  <!-- tab-weight: 내용을 tab-summary로 통합 (JS 참조 유지용 빈 div) -->
+  <div id="tab-weight" class="sec" style="display:none!important;"></div>
 
   <!-- ══ 탭 3: 보장 자산(보험) ══ -->
   <div id="tab-insurance" class="sec">
@@ -558,46 +759,12 @@ td.cv, td.ep { display: table-cell !important; vertical-align: middle; }
       </table>
     </div>
 
-    <!-- 자산 타임라인 -->
-    <div class="card">
-      <div class="ct">📅 자산 타임라인</div>
-      <div class="timeline">
-        <div class="tl-item">
-          <div class="tl-dot"></div>
-          <div class="tl-date">2026.04 — 현재</div>
-          <div class="tl-title">금현물 · SOXL 매도 자금 확보 ✅</div>
-          <div class="tl-desc">금현물 전량 매도 + SOXL 익절 완료<br>매도 예수금 약 5,917,271원 확보</div>
-        </div>
-        <div class="tl-item">
-          <div class="tl-dot"></div>
-          <div class="tl-date">2026.08.09</div>
-          <div class="tl-title">토스 적금 만기 (약 2,310만원)</div>
-          <div class="tl-desc">ISA 한도 내 나스닥/S&P 일괄 매수 예정<br>잔여 분은 신협 예금 or CMA 편입</div>
-        </div>
-        <div class="tl-item">
-          <div class="tl-dot"></div>
-          <div class="tl-date">2027.01.29</div>
-          <div class="tl-title">신협 정기예금 만기 (3,000만원)</div>
-          <div class="tl-desc">ISA 추가 매수 or 재예치 결정<br>시장 상황에 따라 분할 투입 검토</div>
-        </div>
-        <div class="tl-item">
-          <div class="tl-dot"></div>
-          <div class="tl-date">2027.02</div>
-          <div class="tl-title">ISA 1기 만기 — 세액공제 전환 전략</div>
-          <div class="tl-desc">만기 자금 최대 300만 원을 연금저축으로 이전 → 당해 연도 세액공제(16.5%) 최대화<br>ISA 2기 즉시 재가입 후 나스닥 100 / S&P 500 분할 매수 지속<br><span style="color:var(--primary);font-weight:700;">절세 순서: ISA 비과세 한도 소진 → 연금저축 300만 이전 → IRP 추가 납입</span></div>
-        </div>
-        <div class="tl-item">
-          <div class="tl-dot goal"></div>
-          <div class="tl-date" style="color:var(--secondary);">2030년 말 — 목표</div>
-          <div class="tl-title" style="color:var(--secondary);">광주 내 집 마련 🏠</div>
-          <div class="tl-desc">예상 자산 3억원 달성 시 광주 주택 구매<br><span style="color:var(--secondary);font-weight:700;">무주택자 주택 구매 요건을 활용한 DC형 퇴직연금 중도 인출(해지) 재원 활용 가능</span><br>주담대 + 금융자산 + DC 연금 중도인출 삼각 전략 검토</div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ══ 탭 5: 전략 & 절세 ══ -->
-  <div id="tab-strategy" class="sec">
+  <!-- ── 전략 & 절세 (tab-plan에 통합) ── -->
+  <!-- tab-strategy: 내용을 tab-plan으로 통합 (JS 참조 유지용 빈 div) -->
+  <div id="tab-strategy" class="sec" style="display:none!important;"></div>
+  <!-- 아래부터 전략 & 절세 원래 내용 -->
+  <div style="border-top:2px dashed #DBEAFE;margin:20px 0 16px;padding-top:16px;">
+    <div style="font-size:13px;font-weight:800;color:var(--primary);margin-bottom:16px;">💡 전략 &amp; 절세</div>
 
     <!-- 소득 기반 구매력 계산기 -->
     <div class="card" style="border:1.5px solid var(--primary);margin-bottom:14px;">
@@ -734,56 +901,8 @@ td.cv, td.ep { display: table-cell !important; vertical-align: middle; }
       </div>
     </div>
 
-    <!-- 인컴 대시보드 -->
-    <div class="card">
-      <div class="ct">💸 예상 인컴 대시보드
-        <span id="income_month_badge" style="margin-left:auto;background:#d1fae5;color:#065f46;font-size:11px;font-weight:800;padding:5px 14px;border-radius:12px;white-space:nowrap;">이번달 예상 —</span>
-      </div>
-      <div style="font-size:10px;color:#94a3b8;margin-bottom:14px;">⚡ 전체 계산 실행 후 보유 수량 자동 반영 · 분배금/주는 최근 실적 기준 수동 입력</div>
-      <div style="font-size:12px;font-weight:800;color:#1e293b;margin-bottom:8px;">📅 분기 배당 (1·4·7·10월)</div>
-      <div style="overflow-x:auto;margin-bottom:16px;">
-      <table style="width:100%;border-collapse:collapse;font-size:11px;min-width:480px;">
-        <thead><tr style="background:#f1f5f9;">
-          <th style="padding:6px 8px;text-align:left;font-weight:700;color:#64748b;">종목</th>
-          <th style="padding:6px 8px;text-align:center;font-weight:700;color:#64748b;">계좌</th>
-          <th style="padding:6px 8px;text-align:right;font-weight:700;color:#64748b;">보유 수량</th>
-          <th style="padding:6px 8px;text-align:right;font-weight:700;color:#64748b;">분배금/주(원)</th>
-          <th style="padding:6px 8px;text-align:right;font-weight:700;color:#64748b;">분기 예상</th>
-        </tr></thead>
-        <tbody id="income_quarterly"></tbody>
-      </table>
-      </div>
-      <div style="font-size:12px;font-weight:800;color:#1e293b;margin-bottom:8px;">📅 월 배당 (매월)</div>
-      <div style="overflow-x:auto;">
-      <table style="width:100%;border-collapse:collapse;font-size:11px;min-width:480px;">
-        <thead><tr style="background:#f1f5f9;">
-          <th style="padding:6px 8px;text-align:left;font-weight:700;color:#64748b;">종목</th>
-          <th style="padding:6px 8px;text-align:center;font-weight:700;color:#64748b;">계좌</th>
-          <th style="padding:6px 8px;text-align:right;font-weight:700;color:#64748b;">보유 수량</th>
-          <th style="padding:6px 8px;text-align:right;font-weight:700;color:#64748b;">분배금/주(원)</th>
-          <th style="padding:6px 8px;text-align:right;font-weight:700;color:#64748b;">월 예상</th>
-        </tr></thead>
-        <tbody id="income_monthly"></tbody>
-      </table>
-      </div>
-      <div style="font-size:12px;font-weight:800;color:#1e293b;margin-bottom:8px;margin-top:16px;">📅 연 1회 배당 (연말)</div>
-      <div style="overflow-x:auto;margin-bottom:4px;">
-      <table style="width:100%;border-collapse:collapse;font-size:11px;min-width:480px;">
-        <thead><tr style="background:#f1f5f9;">
-          <th style="padding:6px 8px;text-align:left;font-weight:700;color:#64748b;">종목</th>
-          <th style="padding:6px 8px;text-align:center;font-weight:700;color:#64748b;">계좌</th>
-          <th style="padding:6px 8px;text-align:right;font-weight:700;color:#64748b;">보유 수량</th>
-          <th style="padding:6px 8px;text-align:right;font-weight:700;color:#64748b;">분배금/주(원)</th>
-          <th style="padding:6px 8px;text-align:right;font-weight:700;color:#64748b;">연 예상</th>
-        </tr></thead>
-        <tbody id="income_annual"></tbody>
-      </table>
-      </div>
-      <div style="background:#f0fdf4;border-radius:10px;padding:10px 14px;margin-top:14px;font-size:10px;color:#16a34a;line-height:1.7;">
-        💡 분기: KODEX 미국나스닥100·ACE 미국나스닥100·TIGER 미국S&P500·ACE 미국S&P500 (1·4·7·10월) &nbsp;|&nbsp; 월: KODEX 미국배당커버드콜액티브·PLUS 고배당주채권혼합 (매월) &nbsp;|&nbsp; 연 1회: TIGER 미국테크TOP10 INDXX (연말, 소액)
-      </div>
-    </div>
-  </div>
+  </div><!-- /전략&절세 wrapper -->
+  </div><!-- /tab-plan -->
 
   <!-- ══ 탭 6: 히스토리 ══ -->
   <div id="tab-history" class="sec">
@@ -820,14 +939,147 @@ td.cv, td.ep { display: table-cell !important; vertical-align: middle; }
       </table>
       </div>
     </div>
-  </div>
-
-  <!-- ══ 탭 7: AI 상담용 복사 ══ -->
-  <div id="tab-export" class="sec">
-    <div class="card">
-      <div class="ct">AI 상담용 텍스트 생성</div>
+    <!-- ── AI 상담용 복사 (통합) ── -->
+    <div class="card" style="border-top:2px dashed #DBEAFE;margin-top:20px;">
+      <div class="ct">🤖 AI 상담용 텍스트 생성</div>
       <textarea id="export_box" style="width:100%;height:300px;padding:12px;border:1px solid #cbd5e1;border-radius:12px;font-size:12px;line-height:1.6;font-family:monospace;background:#f8fafc;"></textarea>
       <button class="btn-p" style="width:100%;margin-top:10px;" onclick="copyText()">📋 클립보드에 복사하기</button>
+    </div>
+  </div>
+
+  <!-- tab-export: 내용을 tab-history로 통합 (JS 참조 유지용 빈 div) -->
+  <div id="tab-export" class="sec" style="display:none!important;"></div>
+
+  <!-- ══ 탭 8: 퇴직연금 시뮬레이션 ══ -->
+  <div id="tab-retirement" class="sec">
+    <!-- 입력 설정 -->
+    <div class="card">
+      <div class="ct">⚙️ 시뮬레이션 설정</div>
+      <table style="margin-bottom:12px;">
+        <tr>
+          <th style="text-align:left;width:50%;">항목</th>
+          <th style="text-align:right;">값</th>
+        </tr>
+        <tr>
+          <td>
+            <div style="font-weight:700;">초기 자산</div>
+            <div style="font-size:10px;color:#94a3b8;margin-top:2px;">연금저축 + IRP 현재평가액</div>
+          </td>
+          <td><input type="number" id="ret_initial" value="12703932" style="text-align:right;" onchange="calcRetirement()"></td>
+        </tr>
+        <tr>
+          <td>
+            <div style="font-weight:700;">월간 투입액</div>
+            <div style="font-size:10px;color:#94a3b8;margin-top:2px;">고정: 개인연금 + IRP</div>
+          </td>
+          <td style="text-align:right;font-weight:700;color:#666;">200,000원</td>
+        </tr>
+        <tr>
+          <td>
+            <div style="font-weight:700;">연간 평균 수익률</div>
+            <div style="font-size:10px;color:#94a3b8;margin-top:2px;">시뮬레이션 기본값: 5.43%</div>
+          </td>
+          <td><input type="number" id="ret_annual_rate" value="5.43" step="0.01" style="text-align:right;" onchange="calcRetirement()" placeholder="5.43"> %</td>
+        </tr>
+      </table>
+      <button class="btn-p" style="width:100%;" onclick="calcRetirement()">🔄 시뮬레이션 계산</button>
+    </div>
+
+    <!-- 메트릭 -->
+    <div class="mgrid">
+      <div class="mc">
+        <div class="ml">초기 자산</div>
+        <div class="mv" id="ret_display_initial">12.7M</div>
+        <div class="ms">2026년 4월</div>
+      </div>
+      <div class="mc">
+        <div class="ml">2049년 자산</div>
+        <div class="mv" id="ret_display_target">151M</div>
+        <div class="ms" id="ret_display_multiple">약 11.9배</div>
+      </div>
+      <div class="mc">
+        <div class="ml">월평균 수령액</div>
+        <div class="mv" id="ret_display_monthly">48만</div>
+        <div class="ms">2049~2069년</div>
+      </div>
+      <div class="mc">
+        <div class="ml">연간 수익률</div>
+        <div class="mv" id="ret_display_rate">5.43%</div>
+        <div class="ms">설정값</div>
+      </div>
+    </div>
+
+    <!-- 적립 단계 -->
+    <div class="card">
+      <div class="ct">【적립 단계: 2026년 4월 ~ 2049년 1월】</div>
+      <table>
+        <tr>
+          <th style="text-align:left;width:50%;">항목</th>
+          <th style="text-align:right;">금액</th>
+        </tr>
+        <tr>
+          <td>시작 자산</td>
+          <td class="cv" id="ret_accum_initial">12,703,932원</td>
+        </tr>
+        <tr>
+          <td>월간 투입액</td>
+          <td class="cv">200,000원</td>
+        </tr>
+        <tr>
+          <td>투입 기간</td>
+          <td class="cv">273개월 (22년 9개월)</td>
+        </tr>
+        <tr>
+          <td>누적 투입액</td>
+          <td class="cv" id="ret_accum_total_input">55,200,000원</td>
+        </tr>
+        <tr style="background:#EFF6FF;">
+          <td style="font-weight:700;">적립 수익</td>
+          <td class="cv" id="ret_accum_profit">95,773,388원</td>
+        </tr>
+        <tr style="background:#1D4ED8;color:#fff;">
+          <td style="font-weight:700;">2049년 1월말 자산</td>
+          <td style="text-align:right;font-weight:700;" id="ret_accum_final">150,973,388원</td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- 수령 단계 -->
+    <div class="card">
+      <div class="ct">【수령 단계: 2049년 2월 ~ 2069년 1월 (20년 균등분할)】</div>
+      <table>
+        <tr>
+          <th style="text-align:left;width:50%;">항목</th>
+          <th style="text-align:right;">금액</th>
+        </tr>
+        <tr>
+          <td>수령 방식</td>
+          <td class="cv">20년 균등분할</td>
+        </tr>
+        <tr>
+          <td>수령 기간</td>
+          <td class="cv">240개월</td>
+        </tr>
+        <tr>
+          <td>20년 총 수령액</td>
+          <td class="cv" id="ret_withdraw_total">116,251,626원</td>
+        </tr>
+        <tr style="background:#70AD47;color:#fff;">
+          <td style="font-weight:700;">월평균 수령액</td>
+          <td style="text-align:right;font-weight:700;color:#fff;" id="ret_withdraw_monthly">484,382원</td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- 참고 -->
+    <div class="card" style="background:#FEF3C7;border:1px solid #FCD34D;">
+      <div class="ct">⚠️ 시뮬레이션 가정</div>
+      <ul style="font-size:11px;color:#64748b;padding-left:18px;line-height:1.8;">
+        <li>연수익률은 보수적 가정입니다 (현재 가중평균: 5.43%)</li>
+        <li>실제 시장 변동성에 따라 결과는 달라질 수 있습니다</li>
+        <li>2049년 1월 자산은 수령 전 잔액이며, 수령 기간 중 연 5.43% 수익 계속 적용</li>
+        <li>세금, 수수료, 인플레이션은 미반영되었습니다</li>
+      </ul>
     </div>
   </div>
 
@@ -839,7 +1091,7 @@ td.cv, td.ep { display: table-cell !important; vertical-align: middle; }
 // ══════════════════════════════════════════════════════
 
 // ── 🔑 GAS 프록시 연결 상수 (gas_backend.gs 와 동일하게 유지) ──
-const GAS_URL   = 'https://script.google.com/macros/s/AKfycbyqlxLvKhQlFbfsAvRN9IbZrZb5P2n133CnePO7zB2qQh5vVj7dYGh7_AvHFXVrrUM6gQ/exec';
+const GAS_URL   = 'https://script.google.com/macros/s/AKfycbz3cQR17IbFrsEVyAhkDEuuxl9VCtk8CaGiES4sXlcyNIcDvyz_zA6F2Rj2hEPRYwjolg/exec';
 const GAS_TOKEN = 'mong2-pfs-v1';
 const FETCH_TIMEOUT_MS = 15000;  // 15초 타임아웃
 
@@ -856,6 +1108,23 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = FETCH_TIMEOUT_MS)
 }
 const HISTORY_KEY = 'pfs_history';
 const INPUTS_KEY  = 'pfs_inputs';   // 입력값 로컬 캐시 키
+const DIV_KEY     = 'pfs-div-v1';  // 주당 분배금 캐시 키
+
+// ─── 인컴 종목 전역 정의 (updStrategy · calcMonthlyIncome 공용) ───
+const INCOME_QUARTERLY = [
+  { code:'379810', name:'KODEX 미국나스닥100',     acct:'ISA',   qId:'q_isa_nq',   divPerShare: 78 },
+  { code:'360750', name:'TIGER 미국S&P500',        acct:'ISA',   qId:'q_isa_sp',   divPerShare: 65 },
+  { code:'360750', name:'TIGER 미국S&P500',        acct:'DC',    qId:'q_dc_sp',    divPerShare: 65 },
+  { code:'360200', name:'ACE 미국S&P500',          acct:'IRP',   qId:'q_irp_sp',   divPerShare: 62 },
+  { code:'367380', name:'ACE 미국나스닥100',       acct:'연금저축', qId:'q_pen_nq', divPerShare: 80 },
+];
+const INCOME_ANNUAL = [
+  { code:'381170', name:'TIGER 미국테크TOP10 INDXX', acct:'IRP', qId:'q_irp_tech', divPerShare: 50 },
+];
+const INCOME_MONTHLY = [
+  { code:'441640', name:'KODEX 미국배당커버드콜액티브', acct:'ISA', qId:'q_isa_cc', divPerShare: 99 },
+  { code:'251600', name:'PLUS 고배당주채권혼합',        acct:'IRP', qId:'q_irp_div', divPerShare: 45 },
+];
 
 const ALL_FIELDS = [
   'baseDate','usdRate',
@@ -867,8 +1136,9 @@ const ALL_FIELDS = [
   'q_irp_div','a_irp_div','c_irp_div','cash_irp',
   'q_pen_nq','a_pen_nq','c_pen_nq','cash_pen',
   'q_gold','a_gold','c_gold','cash_gold',
-  'q_kp_soxl','a_kp_soxl','c_kp_soxl','q_kp_qqxl','a_kp_qqxl','c_kp_qqxl',
+  'q_kp_soxl','a_kp_soxl','c_kp_soxl',
   'q_kp_tqqq','a_kp_tqqq','c_kp_tqqq','q_kp_rkt','a_kp_rkt','c_kp_rkt',
+  'q_kp_nke','a_kp_nke','c_kp_nke',
   'q_kp_cibr','a_kp_cibr','c_kp_cibr','cash_kp',
   'q_toss','a_toss','c_toss','q_toss_nvda','a_toss_nvda','c_toss_nvda','cash_toss',
   'dep','dep_d','sav','sav_d','chq','emg1','emg2','emg3'
@@ -879,10 +1149,10 @@ const PRICE_MAP_US = [
   { sym:'GC=F',  ids:['__gold__'],   label:'금시세', isGold:true },
   { sym:'NVDA',  ids:['c_toss_nvda'],label:'NVDA'  },
   { sym:'SOXL',  ids:['c_kp_soxl'],  label:'SOXL'  },
-  { sym:'QQXL',  ids:['c_kp_qqxl'],  label:'QQXL'  },
   { sym:'TQQQ',  ids:['c_kp_tqqq'],  label:'TQQQ'  },
   { sym:'RKLB',  ids:['c_kp_rkt'],   label:'RKLB'  },
   { sym:'CIBR',  ids:['c_kp_cibr'],  label:'CIBR'  },
+  { sym:'NKE',   ids:['c_kp_nke'],   label:'NKE'   },
 ];
 // 한국 ETF (네이버 금융 모바일 API)
 const PRICE_MAP_KRX = [
@@ -911,10 +1181,10 @@ const catCol = {'S&P500':'#1D9E75','나스닥100':'#378ADD','반도체/AI/혁신
 const catDef = {'S&P500':20,'나스닥100':35,'반도체/AI/혁신':18,'배당/인컴':5,'개별/테마':5,'안전자산(TDF)':5,'안전자산(현금)':7,'실물/대안자산':5};
 const catItems = {
   'S&P500':         'TIGER 미국S&P500 (ISA) · TIGER 미국S&P500 (DC) · ACE 미국S&P500 (IRP)',
-  '나스닥100':       'KODEX 미국나스닥100 (ISA) · ACE 미국나스닥100 (연금저축) · TIGER 미국테크TOP10 INDXX (IRP) · QQXL (카카오페이) · TQQQ (카카오페이)',
-  '반도체/AI/혁신':  'PLUS 글로벌휴머노이드로봇액티브 (DC) · TIGER 미국AI데이터센터 (DC) · KODEX 삼성전자SK하이닉스채권혼합50 (DC) ·1Q 미국우주항공데크 (토스) · NVDA (토스) · SOXL (카카오페이)',
+  '나스닥100':       'KODEX 미국나스닥100 (ISA) · ACE 미국나스닥100 (연금저축) · TIGER 미국테크TOP10 INDXX (IRP) · TQQQ (카카오페이)',
+  '반도체/AI/혁신':  'PLUS 글로벌휴머노이드로봇액티브 (DC) · TIGER 미국AI데이터센터 (DC) · KODEX 삼성전자SK하이닉스채권혼합50 (DC) · 1Q 미국우주항공데크 (토스) · NVDA (토스) · SOXL (카카오페이)',
   '배당/인컴':       'KODEX 미국배당커버드콜액티브 (ISA) · PLUS 고배당주채권혼합 (IRP)',
-  '개별/테마':       '로켓랩 RKLB (카카오페이) · CIBR (카카오페이)',
+  '개별/테마':       '로켓랩 RKLB (카카오페이) · CIBR (카카오페이) · 나이키 NKE (카카오페이)',
   '안전자산(TDF)':   '삼성한국형TDF2045 (DC)',
   '안전자산(현금)':  '머니마켓액티브 (ISA) · 예수금 (전 계좌)',
   '실물/대안자산':   '금현물 보유분 (나무증권) — 매도 후 예수금은 안전자산(현금)으로 분류',
@@ -960,7 +1230,7 @@ let lastSaved = null;
 const ACCOUNTS = [
   {
     key:'ISA', badge:'bi',
-    subtitle:'한국투자증권 — 월 88만 / 4월: 나스닥만 90만 / 2027.2 만기',
+    subtitle:'한국투자증권 — 월 88만 / 4월: 나스닥만 90만 / 2030년 주택 구매 시 인출 예정',
     layout:'split',
     holdings:[
       {q:'q_isa_nq',a:'a_isa_nq',c:'c_isa_nq',defQ:479,defA:24210,
@@ -1002,34 +1272,6 @@ const ACCOUNTS = [
     cash:{id:'cash_dc',def:36512,usd:false,cat:'안전자산(현금)',label:'예수금(원)'},
   },
   {
-    key:'IRP', badge:'br',
-    subtitle:'한국투자증권 — 월 10만',
-    layout:'combined',
-    holdings:[
-      {q:'q_irp_tech',a:'a_irp_tech',c:'c_irp_tech',defQ:141,defA:15097,
-       name:'TIGER 미국테크TOP10 INDXX',linkUrl:'https://finance.naver.com/item/main.naver?code=381170',
-       cat:'나스닥100',ep:'ep_irp_tech',mode:'combined',usdExp:true},
-      {q:'q_irp_sp',  a:'a_irp_sp',  c:'c_irp_sp',  defQ:90, defA:16052,
-       name:'ACE 미국S&P500',linkUrl:'https://finance.naver.com/item/main.naver?code=360200',
-       cat:'S&P500',  ep:'ep_irp_sp',  mode:'combined',usdExp:true},
-      {q:'q_irp_div', a:'a_irp_div', c:'c_irp_div', defQ:186,defA:14008,
-       name:'PLUS 고배당주채권혼합',linkUrl:'https://finance.naver.com/item/main.naver?code=251600',
-       cat:'배당/인컴',ep:'ep_irp_div', mode:'combined'},
-    ],
-    cash:{id:'cash_irp',def:16300,usd:false,cat:'안전자산(현금)',label:'예수금(원)'},
-  },
-  {
-    key:'연금저축', badge:'bp',
-    subtitle:'한국투자증권 — 월 10만',
-    layout:'combined',
-    holdings:[
-      {q:'q_pen_nq',a:'a_pen_nq',c:'c_pen_nq',defQ:98,defA:23518,
-       name:'ACE 미국나스닥100',linkUrl:'https://finance.naver.com/item/main.naver?code=367380',
-       cat:'나스닥100',ep:'ep_pen_nq',mode:'combined',usdExp:true},
-    ],
-    cash:{id:'cash_pen',def:9106,usd:false,cat:'안전자산(현금)',label:'예수금(원)'},
-  },
-  {
     key:'금현물', badge:'bg',
     subtitle:'나무증권',
     layout:'gold',
@@ -1048,9 +1290,6 @@ const ACCOUNTS = [
       {q:'q_kp_soxl',a:'a_kp_soxl',c:'c_kp_soxl',defQ:0, defA:49.48,aStep:0.01,cStep:0.01,
        name:'SOXL',linkUrl:'https://finance.yahoo.com/quote/SOXL',
        usd:true,cat:'반도체/AI/혁신',ep:'ep_kp_soxl',mode:'combined',usdExp:true},
-      {q:'q_kp_qqxl',a:'a_kp_qqxl',c:'c_kp_qqxl',defQ:47,defA:43.73,aStep:0.01,cStep:0.01,
-       name:'QQXL',linkUrl:'https://finance.yahoo.com/quote/QQXL',
-       usd:true,cat:'나스닥100',     ep:'ep_kp_qqxl',mode:'combined',usdExp:true},
       {q:'q_kp_tqqq',a:'a_kp_tqqq',c:'c_kp_tqqq',defQ:40,defA:57.06,aStep:0.01,cStep:0.01,
        name:'TQQQ',linkUrl:'https://finance.yahoo.com/quote/TQQQ',
        usd:true,cat:'나스닥100',     ep:'ep_kp_tqqq',mode:'combined',usdExp:true},
@@ -1060,6 +1299,9 @@ const ACCOUNTS = [
       {q:'q_kp_cibr',a:'a_kp_cibr',c:'c_kp_cibr',defQ:13,defA:75.38,aStep:0.01,cStep:0.01,
        name:'CIBR',linkUrl:'https://finance.yahoo.com/quote/CIBR',
        usd:true,cat:'개별/테마',    ep:'ep_kp_cibr',mode:'combined',usdExp:true},
+      {q:'q_kp_nke', a:'a_kp_nke', c:'c_kp_nke', defQ:0,  defA:0,   aStep:0.01,cStep:0.01,
+       name:'나이키(NKE)',linkUrl:'https://finance.yahoo.com/quote/NKE',
+       usd:true,cat:'개별/테마',    ep:'ep_kp_nke', mode:'combined',usdExp:true},
     ],
     cash:{id:'cash_kp',def:3170.12,step:0.01,usd:true,cat:'안전자산(현금)',label:'예수금($)'},
   },
@@ -1077,6 +1319,34 @@ const ACCOUNTS = [
        usd:true,cat:'반도체/AI/혁신',ep:'ep_toss_nvda',mode:'combined',usdExp:true},
     ],
     cash:{id:'cash_toss',def:30776,usd:false,cat:'안전자산(현금)',label:'예수금(원)'},
+  },
+  {
+    key:'연금저축', badge:'bp',
+    subtitle:'한국투자증권 — 월 10만',
+    layout:'combined',
+    holdings:[
+      {q:'q_pen_nq',a:'a_pen_nq',c:'c_pen_nq',defQ:98,defA:23518,
+       name:'ACE 미국나스닥100',linkUrl:'https://finance.naver.com/item/main.naver?code=367380',
+       cat:'나스닥100',ep:'ep_pen_nq',mode:'combined',usdExp:true},
+    ],
+    cash:{id:'cash_pen',def:9106,usd:false,cat:'안전자산(현금)',label:'예수금(원)'},
+  },
+  {
+    key:'IRP', badge:'br',
+    subtitle:'한국투자증권 — 월 10만',
+    layout:'combined',
+    holdings:[
+      {q:'q_irp_tech',a:'a_irp_tech',c:'c_irp_tech',defQ:141,defA:15097,
+       name:'TIGER 미국테크TOP10 INDXX',linkUrl:'https://finance.naver.com/item/main.naver?code=381170',
+       cat:'나스닥100',ep:'ep_irp_tech',mode:'combined',usdExp:true},
+      {q:'q_irp_sp',  a:'a_irp_sp',  c:'c_irp_sp',  defQ:90, defA:16052,
+       name:'ACE 미국S&P500',linkUrl:'https://finance.naver.com/item/main.naver?code=360200',
+       cat:'S&P500',  ep:'ep_irp_sp',  mode:'combined',usdExp:true},
+      {q:'q_irp_div', a:'a_irp_div', c:'c_irp_div', defQ:186,defA:14008,
+       name:'PLUS 고배당주채권혼합',linkUrl:'https://finance.naver.com/item/main.naver?code=251600',
+       cat:'배당/인컴',ep:'ep_irp_div', mode:'combined'},
+    ],
+    cash:{id:'cash_irp',def:16300,usd:false,cat:'안전자산(현금)',label:'예수금(원)'},
   },
 ];
 
@@ -1205,6 +1475,63 @@ function loadLocal() {
   }
 }
 
+// ─── 주당 분배금 localStorage 헬퍼 ───
+function saveDivPerShare(code, val) {
+  try {
+    const d = JSON.parse(localStorage.getItem(DIV_KEY)||'{}');
+    d[code] = val;
+    localStorage.setItem(DIV_KEY, JSON.stringify(d));
+  } catch(e) { console.warn('분배금 저장 실패:', e); }
+}
+function loadDivPerShare(code, defaultVal) {
+  try {
+    const d = JSON.parse(localStorage.getItem(DIV_KEY)||'{}');
+    return d[code] !== undefined ? d[code] : defaultVal;
+  } catch(e) { return defaultVal; }
+}
+
+// ─── 월 예상 인컴 계산 (요약 탭·전략 탭 공용) ───
+// 반환: { total: 이번달 예상 합계(원), isQtr: 분기 배당월 여부, isDec: 12월 여부 }
+function calcMonthlyIncome() {
+  const nowMonth  = new Date().getMonth() + 1; // 1~12
+  const isQtr     = [1,4,7,10].includes(nowMonth);
+  const isDec     = nowMonth === 12;
+  let total       = 0;
+
+  // 월 배당 — 항상 포함
+  INCOME_MONTHLY.forEach(item => {
+    const qty = parseFloat(document.getElementById(item.qId)?.value) || 0;
+    total += qty * loadDivPerShare(item.code, item.divPerShare);
+  });
+  // 분기 배당 — 1·4·7·10월만
+  if (isQtr) {
+    INCOME_QUARTERLY.forEach(item => {
+      const qty = parseFloat(document.getElementById(item.qId)?.value) || 0;
+      total += qty * loadDivPerShare(item.code, item.divPerShare);
+    });
+  }
+  // 연 1회 — 12월만
+  if (isDec) {
+    INCOME_ANNUAL.forEach(item => {
+      const qty = parseFloat(document.getElementById(item.qId)?.value) || 0;
+      total += qty * loadDivPerShare(item.code, item.divPerShare);
+    });
+  }
+
+  D.incomeMonthly = Math.round(total);
+  return { total: D.incomeMonthly, isQtr, isDec };
+}
+
+// ─── 분배금 기본값 초기화 ───
+function resetDivDefaults() {
+  if (!confirm('분배금/주 값을 모두 기본값으로 되돌리겠습니까?')) return;
+  localStorage.removeItem(DIV_KEY);
+  calcMonthlyIncome();
+  updIncomeDashboard();
+  if (D.grand) updSummary();
+  setSyncStatus('🔄 분배금 기본값으로 초기화 완료');
+}
+
 // ─── 개별 종목 평가금액+수익률 업데이트 ───
 // ISA/DC: 각각 별도 td (ev_*, pc_*)
 function updItems(r, evId, pcId) {
@@ -1253,7 +1580,7 @@ async function loadFromGAS() {
         }
       });
       setSyncStatus('✅ 동기화 완료: ' + new Date().toLocaleTimeString('ko-KR'));
-      if (typeof recalcAll === 'function') recalcAll();
+      calcAll();
     } else {
       setSyncStatus('⚠️ 저장 데이터 없음 — 기본값 사용');
     }
@@ -1338,8 +1665,12 @@ async function fetchPrices() {
 
     // 2) 미국 주식 & 금
     const usdRateNow = data.rate || parseFloat(g('usdRate')) || 0;
-    PRICE_MAP_US.forEach(item => {
-      const price = data.us[item.sym];
+   if (!data.us || !data.kr) {
+        setSyncStatus('⚠️ 시세 응답 형식 오류 (us/kr 키 없음)');
+        return;
+    }
+   PRICE_MAP_US.forEach(item => {
+          const price = data.us?.[item.sym];
       if (price == null) { failed.push(item.label); return; }
 
       if (item.isGold) {
@@ -1404,7 +1735,7 @@ function ci(q, a, c, usd, rate) {
 // ─── 전체 계산 (데이터 주도 — ACCOUNTS 스키마 기반) ───
 function calcAll() {
   const rate = g('usdRate') || 1529;
-  D = { rate, a:{}, cat:{}, catCost:{}, tC:0, tE:0, usdExposureKRW:0 };
+  D = { rate, a:{}, cat:{}, catCost:{}, tC:0, tE:0, usdExposureKRW:0, incomeMonthly:0 };
   Object.keys(catDef).forEach(c => { D.cat[c] = 0; D.catCost[c] = 0; });
   let directUsdKRW = 0;   // 직접 USD 표시 자산 (환전 영향)
 
@@ -1456,7 +1787,7 @@ function calcAll() {
   D.grand    = D.tE + D.sav.total;
   D.totalUSD = directUsdKRW / rate;
 
-  updSummary(); updWt(); makeExport();
+  calcMonthlyIncome(); updSummary(); updIncomeDashboard(); updWt(); makeExport();
   saveLocal();   // 로컬 캐시에 먼저 저장 (오프라인에서도 복원 가능)
   saveToGAS();
   showTab('summary', 1);
@@ -1481,21 +1812,25 @@ function updSummary() {
   sv('goalText', '진행률 '+goalPct.toFixed(1)+'%');
 
   sv('s_usd_drop', '-'+fmt(Math.round(D.usdExposureKRW / D.rate * 100))+'원');
-  const incomeEst = Math.round((D.cat['배당/인컴']||0)*0.03/12);
+  // 실제 수량×주당분배금 계산값 우선 사용, 없으면 자산기반 추정
+  const incomeEst = D.incomeMonthly > 0
+    ? D.incomeMonthly
+    : Math.round((D.cat['배당/인컴']||0)*0.03/12);
   sv('s_income', '약 '+fmt(incomeEst)+'원');
 
-  // 계좌별 테이블
+  // 계좌별 테이블 (innerHTML 단건 할당 최적화)
   const tb = document.getElementById('acct_rows');
-  tb.innerHTML = '<thead><tr><th>계좌</th><th>매입금액</th><th>평가금액</th><th>손익</th><th>수익률</th></tr></thead>';
+  let rows = '<thead><tr><th>계좌</th><th>매입금액</th><th>평가금액</th><th>손익</th><th>수익률</th></tr></thead>';
   Object.entries(D.a).forEach(([name, data]) => {
-    const pnl=data.eval-data.cost, pct=data.cost>0?(pnl/data.cost*100):0;
-    tb.innerHTML += `<tr><td><b>${name}</b></td><td>${fmt(data.cost)}원</td><td>${fmt(data.eval)}원</td><td class="${pc(pnl)}">${(pnl>=0?'+':'')+fmt(pnl)}원</td><td class="${pc(pct)}">${fmtP(pct)}</td></tr>`;
+    const p=data.eval-data.cost, pt=data.cost>0?(p/data.cost*100):0;
+    rows += `<tr><td><b>${name}</b></td><td>${fmt(data.cost)}원</td><td>${fmt(data.eval)}원</td><td class="${pc(p)}">${(p>=0?'+':'')+fmt(p)}원</td><td class="${pc(pt)}">${fmtP(pt)}</td></tr>`;
   });
-  tb.innerHTML += `<tr style="background:#f0fdf4;font-weight:700;"><td>저축/비상금</td><td>-</td><td>${fmt(D.sav.total)}원</td><td>-</td><td>-</td></tr>`;
-  tb.innerHTML += `<tr style="background:linear-gradient(135deg,#1D4ED8,#3B82F6);color:#fff;font-weight:800;">
+  rows += `<tr style="background:#f0fdf4;font-weight:700;"><td>저축/비상금</td><td>-</td><td>${fmt(D.sav.total)}원</td><td>-</td><td>-</td></tr>`;
+  rows += `<tr style="background:linear-gradient(135deg,#1D4ED8,#3B82F6);color:#fff;font-weight:800;">
     <td>총 합계</td><td>${fmt(D.tC)}원</td><td>${fmt(D.grand)}원</td>
     <td class="${pc(pnl)}">${(pnl>=0?'+':'')+fmt(pnl)}원</td>
     <td class="${pc(rPct)}">${fmtP(rPct)}</td></tr>`;
+  tb.innerHTML = rows; // DOM에 단 1회 기록
 
   // ── 향후 계획 시뮬레이터 (연 단리 2% / 기준: 2030.12.31 고정) ──
   // ✅ 수학적으로 올바른 이자 계산식 (거치식 + 적립식 분리)
@@ -1636,7 +1971,11 @@ function updWt() {
   const total = Object.values(D.cat).reduce((a,b)=>a+b,0);
   drawDonut(total);
   const c = document.getElementById('weight_bars'); c.innerHTML='';
-  Object.entries(catDef).forEach(([cat, tgt]) => {
+  // 총합계액(실제 보유금액) 내림차순 정렬
+  const sortedCatEntries = Object.entries(catDef).sort(([catA], [catB]) => {
+    return (D.cat[catB] || 0) - (D.cat[catA] || 0);
+  });
+  sortedCatEntries.forEach(([cat, tgt]) => {
     const actual = total>0?(D.cat[cat]||0)/total*100:0;
     const diff   = actual-tgt;
     const diffStr = (diff>=0?'+':'')+diff.toFixed(1)+'%';
@@ -1661,7 +2000,13 @@ function updWt() {
 
   let rows = '';
   let totalBuy = 0, totalSell = 0;
-  Object.entries(catDef).forEach(([cat, tgtPct]) => {
+  // 조정 필요액 절댓값 내림차순 정렬
+  const rebalEntries = Object.entries(catDef).sort(([catA, tgtA], [catB, tgtB]) => {
+    const adjA = Math.abs(total * (tgtA / 100) - (D.cat[catA] || 0));
+    const adjB = Math.abs(total * (tgtB / 100) - (D.cat[catB] || 0));
+    return adjB - adjA;
+  });
+  rebalEntries.forEach(([cat, tgtPct]) => {
     const current = D.cat[cat] || 0;
     const target  = total * (tgtPct / 100);
     const adjust  = target - current;       // (+) 매수, (-) 매도
@@ -2090,33 +2435,21 @@ function updStrategy() {
     sv('buy_b_net',  fmt(Math.max(0,finB) + propVal - mortgage)+'원');
   }
 
-  // ⑥ 인컴 대시보드
-  // 분기 배당 종목 (현재가 입력 수량 사용)
-  const quarterly = [
-    { name:'KODEX 미국나스닥100', acct:'ISA',   qId:'q_isa_nq',  divPerShare:   78 },
-    { name:'TIGER 미국S&P500',    acct:'ISA',   qId:'q_isa_sp',  divPerShare:   65 },
-    { name:'TIGER 미국S&P500',    acct:'DC',    qId:'q_dc_sp',   divPerShare:   65 },
-    { name:'ACE 미국S&P500',      acct:'IRP',   qId:'q_irp_sp',  divPerShare:   62 },
-    { name:'ACE 미국나스닥100',   acct:'연금저축', qId:'q_pen_nq', divPerShare:   80 },
-  ];
-  const annual = [
-    { name:'TIGER 미국테크TOP10 INDXX', acct:'IRP', qId:'q_irp_tech', divPerShare: 50 },
-  ];
-  const monthly = [
-    { name:'KODEX 미국배당커버드콜액티브', acct:'ISA', qId:'q_isa_cc', divPerShare: 70 },
-    { name:'PLUS 고배당주채권혼합',        acct:'IRP', qId:'q_irp_div',divPerShare: 45 },
-  ];
+}
 
-  function buildIncomeRow(item, period) {
+// ─── 인컴 대시보드 렌더링 (요약 탭에 위치) ───
+function updIncomeDashboard() {
+  function buildIncomeRow(item) {
     const qty = parseFloat(document.getElementById(item.qId)?.value) || 0;
-    const est = Math.round(qty * item.divPerShare);
+    const div = loadDivPerShare(item.code, item.divPerShare);
+    const est = Math.round(qty * div);
     return `<tr>
       <td style="padding:6px 8px;font-weight:700;">${item.name}</td>
       <td style="padding:6px 8px;text-align:center;"><span class="badge bi" style="font-size:9px;">${item.acct}</span></td>
       <td style="padding:6px 8px;text-align:right;">${qty > 0 ? qty.toLocaleString()+'주' : '-'}</td>
       <td style="padding:6px 8px;text-align:right;">
-        <input type="number" value="${item.divPerShare}" style="width:70px;border:1.5px solid #e2e8f0;border-radius:6px;padding:3px 6px;font-size:11px;text-align:right;"
-          oninput="updStrategy()" data-qid="${item.qId}" data-div="1">
+        <input type="number" value="${div}" style="width:70px;border:1.5px solid #e2e8f0;border-radius:6px;padding:3px 6px;font-size:11px;text-align:right;"
+          oninput="saveDivPerShare('${item.code}', parseFloat(this.value)||0); calcMonthlyIncome(); updIncomeDashboard(); if(D.grand) updSummary();" data-code="${item.code}">
       </td>
       <td style="padding:6px 8px;text-align:right;font-weight:800;color:#16a34a;">${est > 0 ? fmt(est)+'원' : '-'}</td>
     </tr>`;
@@ -2125,50 +2458,33 @@ function updStrategy() {
   const qTbody = document.getElementById('income_quarterly');
   const mTbody = document.getElementById('income_monthly');
   const aTbody = document.getElementById('income_annual');
-  if (qTbody) qTbody.innerHTML = quarterly.map(i=>buildIncomeRow(i,'quarterly')).join('');
-  if (mTbody) mTbody.innerHTML = monthly.map(i=>buildIncomeRow(i,'monthly')).join('');
-  if (aTbody) aTbody.innerHTML = annual.map(i=>buildIncomeRow(i,'annual')).join('');
+  if (qTbody) qTbody.innerHTML = INCOME_QUARTERLY.map(i=>buildIncomeRow(i)).join('');
+  if (mTbody) mTbody.innerHTML = INCOME_MONTHLY.map(i=>buildIncomeRow(i)).join('');
+  if (aTbody) aTbody.innerHTML = INCOME_ANNUAL.map(i=>buildIncomeRow(i)).join('');
 
-  // ── 이번달 예상 인컴 총합 ──
+  // 이번달 배지 갱신
+  const { total: monthTotal } = calcMonthlyIncome();
   const nowMonth = new Date().getMonth() + 1;
-  const isQtrMonth = [1,4,7,10].includes(nowMonth);
-  const isDecember = nowMonth === 12;
-  let monthTotal = 0;
-  // 월 배당은 항상 포함
-  monthly.forEach(item => {
-    const qty = parseFloat(document.getElementById(item.qId)?.value) || 0;
-    monthTotal += qty * item.divPerShare;
-  });
-  // 분기 배당월(1·4·7·10월)이면 포함
-  if (isQtrMonth) {
-    quarterly.forEach(item => {
-      const qty = parseFloat(document.getElementById(item.qId)?.value) || 0;
-      monthTotal += qty * item.divPerShare;
-    });
-  }
-  // 12월이면 연 1회 배당 포함
-  if (isDecember) {
-    annual.forEach(item => {
-      const qty = parseFloat(document.getElementById(item.qId)?.value) || 0;
-      monthTotal += qty * item.divPerShare;
-    });
-  }
   const badge = document.getElementById('income_month_badge');
   if (badge) {
     const monthNames = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
-    const label = monthNames[nowMonth-1];
-    badge.textContent = `${label} 예상 ${Math.round(monthTotal).toLocaleString()}원`;
+    badge.textContent = `${monthNames[nowMonth-1]} 예상 ${monthTotal.toLocaleString()}원`;
   }
 }
 
 // ─── 탭 전환 ───
+// 탭 구조 (v2 워크플로우):
+//   0: input(주간업데이트)  1: summary(포트폴리오점검=요약+비중)
+//   2: insurance(보장자산)  3: plan(2030로드맵=계획+전략절세)
+//   4: retirement(퇴직연금) 5: history(기록&내보내기=히스토리+AI복사)
 function showTab(name, idx) {
   document.querySelectorAll('.sec').forEach(s=>s.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   document.getElementById('tab-'+name).classList.add('active');
   document.querySelectorAll('.tab')[idx].classList.add('active');
   if (name==='history') renderHistory();
-  if (name==='strategy') updStrategy();
+  if (name==='plan') updStrategy();       // 전략&절세가 plan에 통합됨
+  if (name==='retirement') initRetirementTab();
 }
 
 // ─── 히스토리 ───
@@ -2596,7 +2912,12 @@ function importJSON(event) {
 
       // 히스토리 복원
       if (Array.isArray(payload.history)) {
-        localStorage.setItem(HISTORY_KEY, JSON.stringify(payload.history));
+        try {
+               localStorage.setItem(HISTORY_KEY, JSON.stringify(payload.history));
+            } catch(e) {
+               alert('⚠️ 저장 공간 부족: ' + e.message + '\n오래된 스냅샷을 삭제하고 다시 시도해 주세요.');
+               return;
+            }
       }
       // 입력값 복원
       if (payload.inputs?.data) {
@@ -2650,6 +2971,176 @@ function todayKST() {
   return kst.toISOString().slice(0, 10);
 }
 
+// ═══════════════════════════════════════════════════════════
+// 퇴직연금 시뮬레이션 함수
+// ═══════════════════════════════════════════════════════════
+
+function initRetirementTab() {
+  // 탭 열릴 때 현재 연금저축+IRP 평가액을 초기값으로 설정
+  if (D && D.a) {
+    const irp = (D.a.IRP || {eval:0}).eval || 0;
+    const pen = (D.a.연금저축 || {eval:0}).eval || 0;
+    const total = irp + pen;
+    if (total > 0) {
+      document.getElementById('ret_initial').value = Math.round(total);
+    }
+  }
+  calcRetirement();
+}
+
+function calcRetirement() {
+  const initial = parseFloat(document.getElementById('ret_initial').value) || 0;
+  const monthlyInput = 200000;
+  const annualRate = parseFloat(document.getElementById('ret_annual_rate').value) || 5.43;
+
+  // 월간 수익률 계산
+  const monthlyRate = Math.pow(1 + annualRate/100, 1/12) - 1;
+
+  // 1) 적립 단계: 2026.4 ~ 2049.1 (273개월) — 만 60세 (1989.1생)
+  // 기말납입(ordinary annuity) FV: FV = P·(1+r)^n + PMT·[(1+r)^n − 1] / r
+  const n273    = 273;
+  const g273    = Math.pow(1 + monthlyRate, n273);
+  const balance = initial * g273
+                + (monthlyRate > 0
+                    ? monthlyInput * (g273 - 1) / monthlyRate
+                    : monthlyInput * n273); // r=0 예외처리
+  const target2049 = balance;
+  const totalInput = monthlyInput * 273;
+  const profit = target2049 - initial - totalInput;
+
+  // 2) 수령 단계: 균등분할 (240개월)
+  const withdrawMonthlyRate = Math.pow(1 + annualRate/100, 1/12) - 1;
+  const n = 240;
+  const monthlyWithdrawal = withdrawMonthlyRate > 0
+        ? target2049 * withdrawMonthlyRate / (1 - Math.pow(1 + withdrawMonthlyRate, -n))
+        : target2049 / n;
+  const totalWithdrawal = monthlyWithdrawal * n;
+
+  // 3) 지표
+  const multiple = initial > 0 ? target2049 / initial : 0;
+
+  // 4) UI 업데이트 - 메트릭
+  document.getElementById('ret_display_initial').textContent = formatShort(initial);
+  document.getElementById('ret_display_target').textContent = formatShort(Math.round(target2049));
+  document.getElementById('ret_display_multiple').textContent = `약 ${multiple.toFixed(2)}배`;
+  document.getElementById('ret_display_monthly').textContent = formatShort(Math.round(monthlyWithdrawal));
+  document.getElementById('ret_display_rate').textContent = `${annualRate.toFixed(2)}%`;
+
+  // 5) UI 업데이트 - 적립 단계
+  document.getElementById('ret_accum_initial').textContent = fmt(Math.round(initial)) + '원';
+  document.getElementById('ret_accum_total_input').textContent = fmt(Math.round(totalInput)) + '원';
+  document.getElementById('ret_accum_profit').textContent = fmt(Math.round(profit)) + '원';
+  document.getElementById('ret_accum_final').textContent = fmt(Math.round(target2049)) + '원';
+
+  // 6) UI 업데이트 - 수령 단계
+  document.getElementById('ret_withdraw_total').textContent = fmt(Math.round(totalWithdrawal)) + '원';
+  document.getElementById('ret_withdraw_monthly').textContent = fmt(Math.round(monthlyWithdrawal)) + '원';
+}
+
+// 짧은 포맷 (억, 만 단위)
+function formatShort(n) {
+  if (n >= 100000000) return (n / 100000000).toFixed(1) + '억';
+  if (n >= 10000)     return Math.round(n / 10000).toLocaleString() + '만';
+  return Math.round(n).toLocaleString();
+}
+
+// ════════════════════════════════════════════
+//  2030 로드맵 수기 입력 & localStorage 저장
+// ════════════════════════════════════════════
+const ROADMAP_LS_KEY = 'roadmap_items_v1';
+
+const ROADMAP_DEFAULT = [
+  { isGoal: false, date: '2026.04 — 현재', title: '금현물 · SOXL 매도 자금 확보 ✅', desc: '금현물 전량 매도 + SOXL 익절 완료\n매도 예수금 약 5,917,271원 확보' },
+  { isGoal: false, date: '2026.08.09', title: '토스 적금 만기 (약 2,310만원)', desc: 'ISA 한도 내 나스닥/S&P 일괄 매수 예정\n잔여 분은 신협 예금 or CMA 편입' },
+  { isGoal: false, date: '2027.01.29', title: '신협 정기예금 만기 (3,000만원)', desc: 'ISA 추가 매수 or 재예치 결정\n시장 상황에 따라 분할 투입 검토' },
+  { isGoal: true,  date: '2030년', title: 'ISA 전액 인출 — 광주 주택 구매 재원 활용', desc: 'ISA 누적 자산 전액 인출 후 광주 주택 구매 자금으로 활용\n비과세 혜택 최대화 후 인출 → 주담대 + ISA + DC 연금 중도인출 삼각 전략\n집 구매 자금 활용 전략: ISA 비과세 인출 → 주담대 레버리지 → DC형 중도인출 검토' },
+  { isGoal: true,  date: '2030년 말 — 목표', title: '광주 내 집 마련 🏠', desc: '예상 자산 3억원 달성 시 광주 주택 구매\n무주택자 주택 구매 요건을 활용한 DC형 퇴직연금 중도 인출(해지) 재원 활용 가능\n주담대 + 금융자산 + DC 연금 중도인출 삼각 전략 검토' }
+];
+
+// 현재 편집 전 원본 백업 (취소용)
+let _roadmapBackup = null;
+
+function loadRoadmapItems() {
+  try {
+    const saved = localStorage.getItem(ROADMAP_LS_KEY);
+    if (saved) return JSON.parse(saved);
+  } catch(e) {}
+  return ROADMAP_DEFAULT.map(item => Object.assign({}, item));
+}
+
+function renderRoadmap() {
+  const items = loadRoadmapItems();
+  const container = document.getElementById('roadmap-timeline');
+  if (!container) return;
+  container.innerHTML = items.map(item => {
+    const dotClass = item.isGoal ? 'tl-dot goal' : 'tl-dot';
+    const dateStyle = item.isGoal ? ' style="color:var(--secondary);"' : '';
+    const titleStyle = (item.isGoal && item.title.includes('🏠')) ? ' style="color:var(--secondary);"' : '';
+    const descHtml = (item.desc || '').replace(/\n/g, '<br>');
+    return `<div class="tl-item">
+  <div class="${dotClass}"></div>
+  <div class="tl-date"${dateStyle}>${item.date}</div>
+  <div class="tl-title"${titleStyle}>${item.title}</div>
+  <div class="tl-desc">${descHtml}</div>
+</div>`;
+  }).join('');
+}
+
+function renderRoadmapEdit() {
+  const items = loadRoadmapItems();
+  const container = document.getElementById('roadmap-timeline');
+  if (!container) return;
+  container.innerHTML = items.map((item, i) => `
+    <div class="tl-edit-wrap" data-idx="${i}">
+      <div class="tl-edit-goal-wrap">
+        <input type="checkbox" id="rm-goal-${i}" ${item.isGoal ? 'checked' : ''}>
+        <label for="rm-goal-${i}">목표 이정표 (초록색)</label>
+      </div>
+      <div class="tl-edit-label">날짜 / 시기</div>
+      <input class="tl-edit-input" id="rm-date-${i}" type="text" value="${item.date}" placeholder="예: 2026.08.09">
+      <div class="tl-edit-label">제목</div>
+      <input class="tl-edit-input" id="rm-title-${i}" type="text" value="${item.title}" placeholder="이정표 제목">
+      <div class="tl-edit-label">설명 (줄바꿈: Enter)</div>
+      <textarea class="tl-edit-textarea" id="rm-desc-${i}" placeholder="상세 설명을 입력하세요">${item.desc || ''}</textarea>
+    </div>
+  `).join('');
+}
+
+function toggleRoadmapEdit() {
+  _roadmapBackup = JSON.stringify(loadRoadmapItems());
+  document.getElementById('roadmap-edit-btn').style.display = 'none';
+  document.getElementById('roadmap-save-btn').style.display = '';
+  document.getElementById('roadmap-cancel-btn').style.display = '';
+  renderRoadmapEdit();
+}
+
+function saveRoadmap() {
+  const items = loadRoadmapItems();
+  const newItems = items.map((_, i) => ({
+    isGoal: document.getElementById(`rm-goal-${i}`).checked,
+    date:   (document.getElementById(`rm-date-${i}`).value || '').trim(),
+    title:  (document.getElementById(`rm-title-${i}`).value || '').trim(),
+    desc:   (document.getElementById(`rm-desc-${i}`).value || '').trim()
+  }));
+  try {
+    localStorage.setItem(ROADMAP_LS_KEY, JSON.stringify(newItems));
+  } catch(e) {
+    alert('저장 실패: localStorage를 사용할 수 없습니다.');
+    return;
+  }
+  document.getElementById('roadmap-edit-btn').style.display = '';
+  document.getElementById('roadmap-save-btn').style.display = 'none';
+  document.getElementById('roadmap-cancel-btn').style.display = 'none';
+  renderRoadmap();
+}
+
+function cancelRoadmapEdit() {
+  document.getElementById('roadmap-edit-btn').style.display = '';
+  document.getElementById('roadmap-save-btn').style.display = 'none';
+  document.getElementById('roadmap-cancel-btn').style.display = 'none';
+  renderRoadmap();
+}
+
 window.onload = () => {
   renderInputCards();  // ⚠ 반드시 최우선: ACCOUNTS 스키마에서 계좌 입력 DOM을 동적 생성
   document.getElementById('baseDate').value = todayKST();
@@ -2658,9 +3149,33 @@ window.onload = () => {
   loadLocal();   // localStorage에서 입력값 복원 (서버 통신 없음)
   // 기준일은 항상 오늘 날짜로 재설정 (캐시된 날짜가 덮어쓰지 않도록)
   document.getElementById('baseDate').value = todayKST();
+  renderRoadmap();  // 2030 로드맵 렌더링 (localStorage 우선)
   // 🚫 loadFromGAS() 자동 실행 금지 → "☁️ GAS 로드" 버튼 클릭 시 수동 실행
   // 🚫 fetchPrices() 자동 실행 금지 → "📡 시세 불러오기" 버튼 클릭 시 수동 실행
 };
+
+// ── UI 아코디언 초기화 (계산 로직과 완전히 독립된 뷰 레이어) ──
+window.addEventListener('load', function initAccordion() {
+  // 아코디언을 적용하지 않을 카드 id (액션 아이템 — 항상 펼쳐 있어야 함)
+  const EXCLUDE = new Set(['rebalance_card', 'stress_card', 'contrib_card']);
+
+  // 요약 탭 + 로드맵 탭의 .card 요소만 대상
+  const cards = [
+    ...document.querySelectorAll('#tab-summary .card'),
+    ...document.querySelectorAll('#tab-plan .card'),
+  ].filter(c => !EXCLUDE.has(c.id));
+
+  cards.forEach(card => {
+    const ct = card.querySelector(':scope > .ct');
+    if (!ct) return;
+    card.classList.add('ac');
+    ct.addEventListener('click', e => {
+      // 헤더 내 버튼·링크·입력칸 클릭 시에는 접기 동작 발동 안 함
+      if (e.target.closest('button, a, input, select, label')) return;
+      card.classList.toggle('cl');
+    });
+  });
+});
 </script>
 </body>
 </html>
