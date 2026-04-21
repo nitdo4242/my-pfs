@@ -558,9 +558,9 @@ td.cv, td.ep { display: table-cell !important; vertical-align: middle; }
     <!-- 2행: 투자 포트폴리오 / 총 손익 / 전체 수익률 / 저축+비상금 -->
     <div class="mgrid">
       <div class="mc">
-        <div class="ml">투자 포트폴리오</div>
+        <div class="ml">투자자산 + 예수금</div>
         <div class="mv" id="s_invest" style="color:var(--primary);">-</div>
-        <div class="ms">총 평가금액</div>
+        <div class="ms">금융계좌 총액 (수익률 기준)</div>
       </div>
       <div class="mc">
         <div class="ml">총 손익</div>
@@ -585,7 +585,7 @@ td.cv, td.ep { display: table-cell !important; vertical-align: middle; }
         <span id="income_month_badge" style="margin-left:auto;background:#d1fae5;color:#065f46;font-size:11px;font-weight:800;padding:5px 14px;border-radius:12px;white-space:nowrap;">이번달 예상 —</span>
       </div>
       <div style="font-size:10px;color:#94a3b8;margin-bottom:14px;">⚡ 전체 계산 실행 후 보유 수량 자동 반영 · 분배금/주는 직접 수정 가능하며 새로고침 후에도 유지됩니다</div>
-      <div style="font-size:12px;font-weight:800;color:#1e293b;margin-bottom:8px;">📅 분기 배당 (1·4·7·10월)</div>
+      <div style="font-size:12px;font-weight:800;color:#1e293b;margin-bottom:8px;">📅 분기 배당 (2·5·8·11월 실지급)</div>
       <div style="overflow-x:auto;margin-bottom:16px;">
         <table style="width:100%;border-collapse:collapse;font-size:11px;min-width:480px;">
           <thead><tr style="background:#f1f5f9;">
@@ -625,7 +625,7 @@ td.cv, td.ep { display: table-cell !important; vertical-align: middle; }
         </table>
       </div>
       <div style="background:#f0fdf4;border-radius:10px;padding:10px 14px;margin-top:14px;font-size:10px;color:#16a34a;line-height:1.7;">
-        💡 분기: KODEX 미국나스닥100·ACE 미국나스닥100·TIGER 미국S&P500·ACE 미국S&P500 (1·4·7·10월) &nbsp;|&nbsp; 월: KODEX 미국배당커버드콜액티브·PLUS 고배당주채권혼합 (매월) &nbsp;|&nbsp; 연 1회: TIGER 미국테크TOP10 INDXX (연말, 소액)
+        💡 분기: KODEX 미국나스닥100·ACE 미국나스닥100·TIGER 미국S&P500·ACE 미국S&P500 (2·5·8·11월 실지급) &nbsp;|&nbsp; 월: KODEX 미국배당커버드콜액티브·PLUS 고배당주채권혼합 (매월) &nbsp;|&nbsp; 연 1회: TIGER 미국테크TOP10 INDXX (연말, 소액)
       </div>
     </div>
     <!-- 계좌별 현황 -->
@@ -1137,11 +1137,11 @@ const ALL_FIELDS = [
   'q_pen_nq','a_pen_nq','c_pen_nq','cash_pen',
   'q_gold','a_gold','c_gold','cash_gold',
   'q_kp_soxl','a_kp_soxl','c_kp_soxl',
-  'q_kp_tqqq','a_kp_tqqq','c_kp_tqqq','q_kp_rkt','a_kp_rkt','c_kp_rkt',
-  'q_kp_nke','a_kp_nke','c_kp_nke',
-  'q_kp_cibr','a_kp_cibr','c_kp_cibr','cash_kp',
+  'q_kp_rkt','a_kp_rkt','c_kp_rkt',
+  'q_kp_nke','a_kp_nke','c_kp_nke','cash_kp',
   'q_toss','a_toss','c_toss','q_toss_nvda','a_toss_nvda','c_toss_nvda','cash_toss',
-  'dep','dep_d','sav','sav_d','chq','emg1','emg2','emg3'
+  'dep','dep_d','sav','sav_d','chq','emg1','emg2','emg3',
+  'base_monthly_sav', 'sim_rate', 'extra_monthly', 'annual_income'
 ];
 
 // 미국 주식/ETF (Yahoo Finance v7 배치)
@@ -1149,9 +1149,7 @@ const PRICE_MAP_US = [
   { sym:'GC=F',  ids:['__gold__'],   label:'금시세', isGold:true },
   { sym:'NVDA',  ids:['c_toss_nvda'],label:'NVDA'  },
   { sym:'SOXL',  ids:['c_kp_soxl'],  label:'SOXL'  },
-  { sym:'TQQQ',  ids:['c_kp_tqqq'],  label:'TQQQ'  },
   { sym:'RKLB',  ids:['c_kp_rkt'],   label:'RKLB'  },
-  { sym:'CIBR',  ids:['c_kp_cibr'],  label:'CIBR'  },
   { sym:'NKE',   ids:['c_kp_nke'],   label:'NKE'   },
 ];
 // 한국 ETF (네이버 금융 모바일 API)
@@ -1175,16 +1173,17 @@ const fmt  = (n,d=0) => isNaN(n)||n===null ? '-' : n.toLocaleString('ko-KR',{min
 const fmtP = n => isNaN(n)||n===null ? '-' : (n>=0?'+':'')+n.toFixed(2)+'%';
 const pc   = n => n>=0 ? 'pos' : 'neg';
 const g    = id => parseFloat(document.getElementById(id)?.value) || 0;
+const gDef = (id, def) => { const v = parseFloat(document.getElementById(id)?.value); return Number.isFinite(v) ? v : def; };
 const sv   = (id,v) => { const e=document.getElementById(id); if(e) e.textContent=v; };
 
 const catCol = {'S&P500':'#1D9E75','나스닥100':'#378ADD','반도체/AI/혁신':'#7F77DD','배당/인컴':'#BA7517','개별/테마':'#D4537E','안전자산(TDF)':'#534AB7','안전자산(현금)':'#D85A30','실물/대안자산':'#D4A017'};
 const catDef = {'S&P500':20,'나스닥100':35,'반도체/AI/혁신':18,'배당/인컴':5,'개별/테마':5,'안전자산(TDF)':5,'안전자산(현금)':7,'실물/대안자산':5};
 const catItems = {
   'S&P500':         'TIGER 미국S&P500 (ISA) · TIGER 미국S&P500 (DC) · ACE 미국S&P500 (IRP)',
-  '나스닥100':       'KODEX 미국나스닥100 (ISA) · ACE 미국나스닥100 (연금저축) · TIGER 미국테크TOP10 INDXX (IRP) · TQQQ (카카오페이)',
+  '나스닥100':       'KODEX 미국나스닥100 (ISA) · ACE 미국나스닥100 (연금저축) · TIGER 미국테크TOP10 INDXX (IRP)',
   '반도체/AI/혁신':  'PLUS 글로벌휴머노이드로봇액티브 (DC) · TIGER 미국AI데이터센터 (DC) · KODEX 삼성전자SK하이닉스채권혼합50 (DC) · 1Q 미국우주항공데크 (토스) · NVDA (토스) · SOXL (카카오페이)',
   '배당/인컴':       'KODEX 미국배당커버드콜액티브 (ISA) · PLUS 고배당주채권혼합 (IRP)',
-  '개별/테마':       '로켓랩 RKLB (카카오페이) · CIBR (카카오페이) · 나이키 NKE (카카오페이)',
+  '개별/테마':       '로켓랩 RKLB (카카오페이) · 나이키 NKE (카카오페이)',
   '안전자산(TDF)':   '삼성한국형TDF2045 (DC)',
   '안전자산(현금)':  '머니마켓액티브 (ISA) · 예수금 (전 계좌)',
   '실물/대안자산':   '금현물 보유분 (나무증권) — 매도 후 예수금은 안전자산(현금)으로 분류',
@@ -1262,9 +1261,7 @@ const ACCOUNTS = [
       {q:'q_dc_ai', a:'a_dc_ai', c:'c_dc_ai', defQ:311,defA:9185,
        name:'TIGER 미국AI데이터센터',linkUrl:'https://finance.naver.com/item/main.naver?code=0142D0',
        cat:'반도체/AI/혁신',ev:'ev_dc_ai', pc:'pc_dc_ai', mode:'split'},
-      {isFixed:true,c:'c_dc_tdf',defC:5807761,name:'삼성한국형TDF2045',
-       cat:'안전자산(TDF)',ev:'ev_dc_tdf'},
-      {q:'q_dc_mm', a:'a_dc_mm', c:'c_dc_mm', defQ:6,  defA:103175,
+       {q:'q_dc_mm', a:'a_dc_mm', c:'c_dc_mm', defQ:6,  defA:103175,
        name:'KODEX 삼성전자SK하이닉스채권혼합50',linkUrl:'https://finance.naver.com/item/main.naver?code=0177N0',
        cat:'반도체/AI/혁신',ev:'ev_dc_mm', pc:'pc_dc_mm', mode:'split',skipCatCost:true},
     ],
@@ -1290,15 +1287,9 @@ const ACCOUNTS = [
       {q:'q_kp_soxl',a:'a_kp_soxl',c:'c_kp_soxl',defQ:0, defA:49.48,aStep:0.01,cStep:0.01,
        name:'SOXL',linkUrl:'https://finance.yahoo.com/quote/SOXL',
        usd:true,cat:'반도체/AI/혁신',ep:'ep_kp_soxl',mode:'combined',usdExp:true},
-      {q:'q_kp_tqqq',a:'a_kp_tqqq',c:'c_kp_tqqq',defQ:40,defA:57.06,aStep:0.01,cStep:0.01,
-       name:'TQQQ',linkUrl:'https://finance.yahoo.com/quote/TQQQ',
-       usd:true,cat:'나스닥100',     ep:'ep_kp_tqqq',mode:'combined',usdExp:true},
       {q:'q_kp_rkt', a:'a_kp_rkt', c:'c_kp_rkt', defQ:15,defA:78.19,aStep:0.01,cStep:0.01,
        name:'로켓랩',linkUrl:'https://finance.yahoo.com/quote/RKLB',
        usd:true,cat:'개별/테마',    ep:'ep_kp_rkt', mode:'combined',usdExp:true},
-      {q:'q_kp_cibr',a:'a_kp_cibr',c:'c_kp_cibr',defQ:13,defA:75.38,aStep:0.01,cStep:0.01,
-       name:'CIBR',linkUrl:'https://finance.yahoo.com/quote/CIBR',
-       usd:true,cat:'개별/테마',    ep:'ep_kp_cibr',mode:'combined',usdExp:true},
       {q:'q_kp_nke', a:'a_kp_nke', c:'c_kp_nke', defQ:0,  defA:0,   aStep:0.01,cStep:0.01,
        name:'나이키(NKE)',linkUrl:'https://finance.yahoo.com/quote/NKE',
        usd:true,cat:'개별/테마',    ep:'ep_kp_nke', mode:'combined',usdExp:true},
@@ -1387,7 +1378,7 @@ function renderInputCards() {
     return `<input type="number" id="${id}"${phAttr}${stepAttr}>`;
   };
 
-  // ─── 계좌 카드 HTML 빌더 ───
+// ─── 계좌 카드 HTML 빌더 ───
   const renderCard = acct => {
     // 카카오페이는 USD 모드 전용 헤더
     const layoutKey = (acct.layout === 'combined' && acct.currency === 'usd')
@@ -1398,12 +1389,9 @@ function renderInputCards() {
     const thead    = `<thead><tr>${L.head.map(h=>`<th>${h}</th>`).join('')}</tr></thead>`;
 
     let rows = '';
+
+    // 1. 일반 종목 (현재가 입력창 생성 파트)
     acct.holdings.forEach(h => {
-      // 고정 평가금액 입력 (TDF 등) — q/a 없음
-      if (h.isFixed) {
-        rows += `<tr><td>${h.name}</td><td colspan="2">-</td><td data-label="평가금액 입력">${inp(h.c, h.defC)}</td><td class="cv" data-label="현재 평가" id="${h.ev}">-</td><td>-</td></tr>`;
-        return;
-      }
       const qInput = inp(h.q, h.defQ, h.qStep);
       const aInput = inp(h.a, h.defA, h.aStep);
       const cInput = inpPh(h.c, h.cPlaceholder, h.cStep);
@@ -1420,7 +1408,17 @@ function renderInputCards() {
       }
     });
 
-    // 예수금 행
+    // 2. 고정 항목 (TDF 등 직접 입력 파트)
+    (acct.fixed || []).forEach(f => {
+      const valInput = `<input type="number" id="${f.valueId}" value="${f.defaultVal}" onchange="calcAll()" onfocus="this.select()">`;
+      if (acct.layout === 'split') {
+        rows += `<tr><td>${f.name}</td><td colspan="2" style="color:#888;text-align:center;font-size:10px;">평가금액 직접입력</td><td data-label="평가금액">${valInput}</td><td class="cv" data-label="현재 평가" id="${f.evId}">-</td><td>-</td></tr>`;
+      } else {
+        rows += `<tr><td>${f.name}</td><td colspan="2" style="color:#888;text-align:center;font-size:10px;">평가금액 직접입력</td><td data-label="평가금액">${valInput}</td><td class="ep" id="${f.evId}">-</td></tr>`;
+      }
+    });
+
+    // 3. 예수금 행
     const c = acct.cash;
     const cashInput = inp(c.id, c.def, c.step);
     if (acct.layout === 'split') {
@@ -1432,7 +1430,7 @@ function renderInputCards() {
     }
 
     return `<div class="card">
-      <div class="ct"><span class="badge ${acct.badge}">${acct.key}</span>${acct.subtitle}</div>
+      <div class="ct"><span class="badge ${acct.badge}">${acct.key}</span> ${acct.subtitle}</div>
       <div style="overflow-x:auto;">
       <table>${colgroup}${thead}<tbody>${rows}</tbody></table>
       </div>
@@ -1486,15 +1484,16 @@ function saveDivPerShare(code, val) {
 function loadDivPerShare(code, defaultVal) {
   try {
     const d = JSON.parse(localStorage.getItem(DIV_KEY)||'{}');
-    return d[code] !== undefined ? d[code] : defaultVal;
+    const v = parseFloat(d[code]);
+    return Number.isFinite(v) ? v : defaultVal;
   } catch(e) { return defaultVal; }
 }
 
 // ─── 월 예상 인컴 계산 (요약 탭·전략 탭 공용) ───
-// 반환: { total: 이번달 예상 합계(원), isQtr: 분기 배당월 여부, isDec: 12월 여부 }
 function calcMonthlyIncome() {
-  const nowMonth  = new Date().getMonth() + 1; // 1~12
-  const isQtr     = [1,4,7,10].includes(nowMonth);
+  const kst = new Date(Date.now() + 9 * 60 * 60 * 1000);
+  const nowMonth  = kst.getUTCMonth() + 1;   // 1~12 (KST 기준)
+  const isQtr     = [2,5,8,11].includes(nowMonth);
   const isDec     = nowMonth === 12;
   let total       = 0;
 
@@ -1503,7 +1502,7 @@ function calcMonthlyIncome() {
     const qty = parseFloat(document.getElementById(item.qId)?.value) || 0;
     total += qty * loadDivPerShare(item.code, item.divPerShare);
   });
-  // 분기 배당 — 1·4·7·10월만
+  // 분기 배당 — 2·5·8·11월만 (실지급 기준)
   if (isQtr) {
     INCOME_QUARTERLY.forEach(item => {
       const qty = parseFloat(document.getElementById(item.qId)?.value) || 0;
@@ -1530,6 +1529,25 @@ function resetDivDefaults() {
   updIncomeDashboard();
   if (D.grand) updSummary();
   setSyncStatus('🔄 분배금 기본값으로 초기화 완료');
+}
+
+// ─── 인컴 대시보드 분배금 직접 입력 처리 ───
+function onDivInput(inputEl, code, defaultVal) {
+  const v = parseFloat(inputEl.value) || 0;
+  saveDivPerShare(code, v);
+  // 같은 row의 마지막 td(예상액)만 업데이트
+  const row = inputEl.closest('tr');
+  const qty = parseFloat(row.children[2].textContent.replace(/,/g,'')) || 0;
+  row.lastElementChild.textContent = qty > 0 ? fmt(Math.round(qty * v)) + '원' : '-';
+  // 배지·요약만 재계산 (테이블 재생성 X)
+  calcMonthlyIncome();
+  const badge = document.getElementById('income_month_badge');
+  if (badge) {
+    const m = new Date().getMonth();
+    const names = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+    badge.textContent = `${names[m]} 예상 ${(D.incomeMonthly||0).toLocaleString()}원`;
+  }
+  if (D.grand) updSummary();
 }
 
 // ─── 개별 종목 평가금액+수익률 업데이트 ───
@@ -1561,6 +1579,7 @@ function setSyncStatus(msg) {
 
 // ─── GAS 로드 (불러오기) ───
 async function loadFromGAS() {
+  if (!confirm('현재 화면 입력값이 서버 데이터로 덮어써집니다. 계속할까요?')) return; // 
   setSyncStatus('🔄 구글 시트에서 데이터 로딩 중...');
   try {
     const url  = `${GAS_URL}?action=load&token=${encodeURIComponent(GAS_TOKEN)}`;
@@ -1672,7 +1691,9 @@ async function fetchPrices() {
     }
    PRICE_MAP_US.forEach(item => {
           const price = data.us?.[item.sym];
-      if (price == null) { failed.push(item.label); return; }
+      if (price == null || !Number.isFinite(price) || price <= 0) {
+             failed.push(item.label); return;
+         }
 
       if (item.isGold) {
         if (!usdRateNow) { failed.push('금(환율없음)'); return; }
@@ -1730,8 +1751,8 @@ async function fetchPrices() {
 function ci(q, a, c, usd, rate) {
   const qty=g(q), avg=g(a), cur=g(c);
   const has = cur > 0 && qty > 0;
-  const cost  = has ? qty*avg : 0;           // ✅ 시세 없으면 원가도 제외 (쌍수 일치)
-  const eval_ = has ? qty*cur : 0;
+  const cost  = qty>0 ? qty*avg : 0;                 // 원가는 항상 유지
+  const eval_ = has ? qty*cur : cost;                // 시세 없으면 원가로 대체
   const pnl = eval_ - cost;
   const pct = cost > 0 ? pnl/cost*100 : 0;
   return { cost:usd?cost*rate:cost, eval:usd?eval_*rate:eval_, pnl:usd?pnl*rate:pnl, has, pct };
@@ -1759,7 +1780,7 @@ function calcAll() {
         if (r.has) { D.cat[h.cat] += r.eval; D.catCost[h.cat] += r.cost; }
       } else {
         D.cat[h.cat] += r.eval;
-        if (!h.skipCatCost) D.catCost[h.cat] += r.cost;
+        D.catCost[h.cat] += h.skipCatCost ? r.eval : r.cost;
       }
       if (h.usdExp && r.has) D.usdExposureKRW += r.eval;
       if (h.usd && r.has) directUsdKRW += r.eval;
@@ -1794,12 +1815,18 @@ function calcAll() {
   D.totalUSD = directUsdKRW / rate;
 
  calcMonthlyIncome(); updSummary(); updIncomeDashboard(); updWt(); makeExport();
+  
+  // 현재 보고 있는 탭이 퇴직연금 탭이면 퇴직연금 시뮬레이터도 즉시 갱신
+  if (document.getElementById('tab-retirement').classList.contains('active')) {
+    initRetirementTab();
+  }
+
   saveLocal();   // 로컬 캐시에 먼저 저장 (오프라인에서도 복원 가능)
   if (!calcAll._skipRemoteSave) saveToGAS();   // ✅ loadFromGAS 직후엔 서버 저장 생략
   calcAll._skipRemoteSave = false;
-  showTab('summary', 1);
+  
+  // showTab('summary', 1); // ◀ 주석 처리하여 화면 튕김 방지
 }
-
 // ─── 요약 탭 ───
 function updSummary() {
   const rate = D.rate;
@@ -1847,9 +1874,9 @@ function updSummary() {
   //      r: 월 이자율 (연 수익률 / 12)
   //      n: 남은 개월 수
   //      PMT: 월 저축액 (base_monthly_sav + extra_monthly)
-  const RATE_ANNUAL = parseFloat(document.getElementById('sim_rate')?.value) || 0.05; // 연 수익률 (가변)
-  const BASE_SAV    = parseFloat(document.getElementById('base_monthly_sav')?.value) || 1310000;
-  const EXTRA_SAV   = parseFloat(document.getElementById('extra_monthly')?.value) || 0;
+  const RATE_ANNUAL = gDef('sim_rate', 0.05);
+  const BASE_SAV    = gDef('base_monthly_sav', 1310000);
+  const EXTRA_SAV   = gDef('extra_monthly', 0);
   const PMT         = BASE_SAV + EXTRA_SAV;       // 월 저축액 (기본 + 추가)
   const r           = RATE_ANNUAL / 12;           // 월 이자율
   const now    = new Date();
@@ -2348,12 +2375,19 @@ function updStrategy() {
   }
 
   // ③ 연말정산 절세 한도 트래커
-  // 납입 기준: "완료된 월 수" × 연금저축 10만 / IRP 10만 (추정)
+  // 납입 기준: 매월 25일 자동이체 가정 (1월~현재월까지 계산)
   const now = new Date();
-  // ✅ 당월 1일이 지났으면 당월 납입 포함 → 1~12 범위
-  const monthsPassed = now.getMonth() + (now.getDate() >= 1 ? 1 : 0);
-  const penPaid  = monthsPassed * 100000;   // 연금저축 월 10만
-  const irpPaid  = monthsPassed * 100000;   // IRP 월 10만 (합산용)
+  const kst = new Date(now.getTime() + (9 * 60 * 60 * 1000));
+  
+  // ✅ KST 기준 월(0~11) + 25일 경과 여부에 따른 당월 포함 로직
+  const monthsPassed = kst.getUTCMonth() + (kst.getUTCDate() >= 25 ? 1 : 0);
+  
+ // 향후 납입액 변경 시 이 숫자만 고치면 트래커에 자동 반영됩니다.
+  const MONTHLY_PEN_INPUT = 100000; 
+  const MONTHLY_IRP_INPUT = 100000;
+
+const penPaid  = monthsPassed * MONTHLY_PEN_INPUT;
+const irpPaid  = monthsPassed * MONTHLY_IRP_INPUT;
   const combPaid = penPaid + irpPaid;
   const PEN_LIMIT  = 6000000;
   const COMB_LIMIT = 9000000;
@@ -2380,11 +2414,10 @@ function updStrategy() {
   const totalMs = tgt - now;
   const months  = Math.max(0, Math.round(totalMs / (1000*60*60*24*30.5)));
   const base    = D && D.grand ? D.grand : 0;
-  const BASE_SAV = parseFloat(document.getElementById('base_monthly_sav')?.value) || 1310000;
-  const extraVal = parseFloat(document.getElementById('extra_monthly')?.value) || 0;
-  const rAnnual  = parseFloat(document.getElementById('sim_rate')?.value) || 0.05;
+  const BASE_SAV = gDef('base_monthly_sav', 1310000);
+  const extraVal = gDef('extra_monthly', 0);
+  const rAnnual  = gDef('sim_rate', 0.05);
   const rMonthly = rAnnual / 12;
-
   const years = months / 12; // 표시용
 
   // 월 복리 헬퍼: FV = P(1+r)^n + PMT × ((1+r)^n − 1) / r
@@ -2457,7 +2490,7 @@ function updIncomeDashboard() {
       <td style="padding:6px 8px;text-align:right;">${qty > 0 ? qty.toLocaleString()+'주' : '-'}</td>
       <td style="padding:6px 8px;text-align:right;">
         <input type="number" value="${div}" style="width:70px;border:1.5px solid #e2e8f0;border-radius:6px;padding:3px 6px;font-size:11px;text-align:right;"
-          oninput="saveDivPerShare('${item.code}', parseFloat(this.value)||0); calcMonthlyIncome(); updIncomeDashboard(); if(D.grand) updSummary();" data-code="${item.code}">
+                 oninput="onDivInput(this, '${item.code}')" data-code="${item.code}" data-qid="${item.qId}">
       </td>
       <td style="padding:6px 8px;text-align:right;font-weight:800;color:#16a34a;">${est > 0 ? fmt(est)+'원' : '-'}</td>
     </tr>`;
@@ -2538,11 +2571,17 @@ function saveSnapshot() {
   } else {
     history.unshift(snap);
   }
-  localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+// 저장 용량 초과 에러(QuotaExceededError) 방어
+  try {
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+  } catch(e) {
+    alert('⚠️ 저장 공간 부족: ' + e.message + '\n오래된 스냅샷을 삭제하거나 JSON 내보내기 후 정리해 주세요.');
+    return;
+  }
+  
   renderHistory();
   alert('✅ '+today+' 스냅샷 저장 완료! (종목 상세 포함)');
 }
-
 function deleteSnapshot(date) {
   if (!confirm(date+' 기록을 삭제하시겠습니까?')) return;
   const history = loadHistory().filter(h=>h.date!==date);
@@ -2595,9 +2634,9 @@ function buildHoldingsSec(title, items, cash, cashIsUsd, usdRate) {
 
     html += `<tr>
       <td class="hd-td-l">${item.name}</td>
-      <td>${qty}</td>
-      <td>${avg}${unit}</td>
-      <td>${cur > 0 ? cur+unit : '-'}</td>
+      <td>${item.isUsd ? qty : fmt(qty)}</td>
+        <td>${fmt(avg)}${unit}</td>
+        <td>${cur > 0 ? fmt(cur)+unit : '-'}</td>
       <td class="hd-bold">${evKrw > 0 ? fmt(evKrw)+'원' : '-'}</td>
       <td class="${cls} hd-bold">${pct !== null && evKrw > 0 ? (pnl>=0?'+':'')+pct+'%' : '-'}</td>
     </tr>`;
@@ -2642,14 +2681,24 @@ function buildGoldSec(f) {
 
 // ─── ACCOUNTS 스키마 → buildHoldingsSec items 배열 변환 ───
 function acctToHistItems(acct, f) {
-  return acct.holdings.map(h => ({
+  const holdingItems = acct.holdings.map(h => ({
     name  : h.name + (h.usd ? ' ($)' : ''),
-    q     : h.isFixed ? null : f[h.q],
-    a     : h.isFixed ? null : f[h.a],
+    q     : f[h.q],
+    a     : f[h.a],
     c     : f[h.c],
-    isFixed: !!h.isFixed,
+    isFixed: false,
     isUsd : !!h.usd,
   }));
+  // acct.fixed 항목(예: TDF)도 히스토리 상세에 포함
+  const fixedItems = (acct.fixed || []).map(fi => ({
+    name   : fi.name,
+    q      : null,
+    a      : null,
+    c      : f[fi.valueId],
+    isFixed: true,
+    isUsd  : false,
+  }));
+  return [...holdingItems, ...fixedItems];
 }
 
 // ─── 히스토리 상세 전체 HTML 빌드 (ACCOUNTS 루프 기반) ───
@@ -2835,10 +2884,10 @@ function makeExport() {
   const rate = g('usdRate');
   const now  = new Date();
 
-  // ✅ updSummary와 동일한 월 복리식 — 가변 저축액·수익률 반영 (화면/복사본 정합성)
-  const RATE_ANNUAL = parseFloat(document.getElementById('sim_rate')?.value) || 0.05;
-  const BASE_SAV    = parseFloat(document.getElementById('base_monthly_sav')?.value) || 1310000;
-  const EXTRA_SAV   = parseFloat(document.getElementById('extra_monthly')?.value) || 0;
+// ✅ updSummary와 동일한 월 복리식 — 가변 저축액·수익률 반영 (화면/복사본 정합성)
+  const RATE_ANNUAL = gDef('sim_rate', 0.05);
+  const BASE_SAV    = gDef('base_monthly_sav', 1310000);
+  const EXTRA_SAV   = gDef('extra_monthly', 0);
   const PMT     = BASE_SAV + EXTRA_SAV;
   const r       = RATE_ANNUAL / 12;
   const months  = Math.max(0, Math.round((new Date(2030,11,31)-now)/(1000*60*60*24*30.5)));
@@ -2864,7 +2913,7 @@ function makeExport() {
     `   저축/비상금: ${fmt(D.sav?.total)}원`,
     `▶ 3억 목표 달성률: ${((D.grand||0)/300000000*100).toFixed(1)}%`,
     `▶ 투자 손익: ${(D.tE-D.tC>=0?'+':'')+fmt(D.tE-D.tC)}원 (${fmtP(D.tC>0?(D.tE-D.tC)/D.tC*100:0)})`,
-    `▶ 환율 100원 하락 시 손실: 약 -${fmt((D.totalUSD||0)*100)}원`,``,
+    `▶ 환율 100원 하락 시 손실: 약 -${fmt(Math.round((D.usdExposureKRW||0)/D.rate*100))}원`,
     `══ 계좌별 현황 ══`,
     ...Object.entries(D.a||{}).map(([name, d]) => {
       const pnl=d.eval-d.cost, pct=d.cost>0?(pnl/d.cost*100).toFixed(2):0;
@@ -2899,10 +2948,12 @@ function exportJSON() {
     const history  = localStorage.getItem(HISTORY_KEY);
     const inputs   = localStorage.getItem(INPUTS_KEY);
     const payload  = {
-      version: 1,
-      exportedAt: new Date().toISOString(),
-      history:  history  ? JSON.parse(history)  : [],
-      inputs:   inputs   ? JSON.parse(inputs)   : {}
+          version: 2,
+         exportedAt: new Date().toISOString(),
+         history:  history  ? JSON.parse(history)  : [],
+         inputs:   inputs   ? JSON.parse(inputs)   : {},
+        divs:     JSON.parse(localStorage.getItem(DIV_KEY)||'{}'),
+        roadmap:  JSON.parse(localStorage.getItem(ROADMAP_LS_KEY)||'null')
     };
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type:'application/json' });
     const url  = URL.createObjectURL(blob);
@@ -2925,22 +2976,30 @@ function importJSON(event) {
   reader.onload = (e) => {
     try {
       const payload = JSON.parse(e.target.result);
-      if (payload.version !== 1) { alert('⚠️ 지원하지 않는 파일 형식입니다.'); return; }
+      
+      // 버전 1과 2 모두 허용하도록 수정
+      if (payload.version !== 1 && payload.version !== 2) { 
+        alert('⚠️ 지원하지 않는 파일 형식입니다.'); 
+        return; 
+      }
+      
       if (!confirm(`📦 백업 파일을 가져옵니다.\n\n📅 내보낸 날짜: ${payload.exportedAt?.slice(0,10)}\n📊 스냅샷: ${payload.history?.length || 0}개\n\n현재 저장된 데이터를 덮어씁니까?`)) return;
 
       // 히스토리 복원
       if (Array.isArray(payload.history)) {
         try {
-               localStorage.setItem(HISTORY_KEY, JSON.stringify(payload.history));
-            } catch(e) {
-               alert('⚠️ 저장 공간 부족: ' + e.message + '\n오래된 스냅샷을 삭제하고 다시 시도해 주세요.');
-               return;
-            }
+          localStorage.setItem(HISTORY_KEY, JSON.stringify(payload.history));
+        } catch(e) {
+          alert('⚠️ 저장 공간 부족: ' + e.message + '\n오래된 스냅샷을 삭제하고 다시 시도해 주세요.');
+          return;
+        }
       }
+      
       // 입력값 복원
       if (payload.inputs?.data) {
         localStorage.setItem(INPUTS_KEY, JSON.stringify(payload.inputs));
         ALL_FIELDS.forEach(id => {
+          if (id === 'baseDate') return;   // ✅ 추가: 기준일은 과거 데이터로 덮어쓰지 않음
           const val = payload.inputs.data[id];
           if (val !== undefined && val !== '') {
             const el = document.getElementById(id);
@@ -2948,7 +3007,23 @@ function importJSON(event) {
           }
         });
       }
+      
+      // 분배금 및 로드맵 데이터 복원 추가 (새로 추가된 부분)
+      if (payload.divs) {
+        localStorage.setItem(DIV_KEY, JSON.stringify(payload.divs));
+      }
+      if (payload.roadmap) {
+        localStorage.setItem(ROADMAP_LS_KEY, JSON.stringify(payload.roadmap));
+      }
+      
+      // 로드맵 화면 업데이트
+      renderRoadmap(); 
+
       renderHistory();
+      // ✅ 추가: 복원된 데이터를 바탕으로 즉시 화면 전체 갱신
+      // 서버 자동저장 방지 플래그를 세우고 계산 함수 호출
+      calcAll._skipRemoteSave = true; 
+      calcAll();
       alert(`✅ JSON 가져오기 완료!\n스냅샷 ${payload.history?.length || 0}개 복원됨.`);
     } catch(err) {
       alert('❌ JSON 파일 파싱 실패: ' + err.message);
