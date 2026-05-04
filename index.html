@@ -990,7 +990,7 @@ td.cv, td.ep { display: table-cell !important; vertical-align: middle; }
       <div class="mc">
         <div class="ml">초기 자산</div>
         <div class="mv" id="ret_display_initial">12.7M</div>
-        <div class="ms">2026년 4월</div>
+        <div class="ms">현재</div>
       </div>
       <div class="mc">
         <div class="ml">2049년 자산</div>
@@ -1011,7 +1011,7 @@ td.cv, td.ep { display: table-cell !important; vertical-align: middle; }
 
     <!-- 적립 단계 -->
     <div class="card">
-      <div class="ct">【적립 단계: 2026년 4월 ~ 2049년 1월】</div>
+      <div class="ct">【적립 단계: 현재 ~ 2049년 1월】</div>
       <table>
         <tr>
           <th style="text-align:left;width:50%;">항목</th>
@@ -1138,7 +1138,7 @@ const ALL_FIELDS = [
   'q_gold','a_gold','c_gold','cash_gold',
   'q_kp_soxl','a_kp_soxl','c_kp_soxl',
   'q_kp_rkt','a_kp_rkt','c_kp_rkt',
-  'q_kp_nke','a_kp_nke','c_kp_nke','cash_kp',
+  'q_kp_nke','a_kp_nke','c_kp_nke','q_kp_tsla','a_kp_tsla','c_kp_tsla','cash_kp',
   'q_toss','a_toss','c_toss','q_toss_nvda','a_toss_nvda','c_toss_nvda','cash_toss',
   'dep','dep_d','sav','sav_d','chq','emg1','emg2','emg3',
   'base_monthly_sav', 'sim_rate', 'extra_monthly', 'annual_income'
@@ -1151,6 +1151,7 @@ const PRICE_MAP_US = [
   { sym:'SOXL',  ids:['c_kp_soxl'],  label:'SOXL'  },
   { sym:'RKLB',  ids:['c_kp_rkt'],   label:'RKLB'  },
   { sym:'NKE',   ids:['c_kp_nke'],   label:'NKE'   },
+  { sym:'TSLA',  ids:['c_kp_tsla'],  label:'TSLA'  },
 ];
 // 한국 ETF (네이버 금융 모바일 API)
 const PRICE_MAP_KRX = [
@@ -1183,7 +1184,7 @@ const catItems = {
   '나스닥100':       'KODEX 미국나스닥100 (ISA) · ACE 미국나스닥100 (연금저축) · TIGER 미국테크TOP10 INDXX (IRP)',
   '반도체/AI/혁신':  'PLUS 글로벌휴머노이드로봇액티브 (DC) · TIGER 미국AI데이터센터 (DC) · KODEX 삼성전자SK하이닉스채권혼합50 (DC) · 1Q 미국우주항공데크 (토스) · NVDA (토스) · SOXL (카카오페이)',
   '배당/인컴':       'KODEX 미국배당커버드콜액티브 (ISA) · PLUS 고배당주채권혼합 (IRP)',
-  '개별/테마':       '로켓랩 RKLB (카카오페이) · 나이키 NKE (카카오페이)',
+  '개별/테마':       '로켓랩 RKLB (카카오페이) · 나이키 NKE (카카오페이) · 테슬라 TSLA (카카오페이)',
   '안전자산(TDF)':   '삼성한국형TDF2045 (DC)',
   '안전자산(현금)':  '머니마켓액티브 (ISA) · 예수금 (전 계좌)',
   '실물/대안자산':   '금현물 보유분 (나무증권) — 매도 후 예수금은 안전자산(현금)으로 분류',
@@ -1293,8 +1294,11 @@ const ACCOUNTS = [
       {q:'q_kp_nke', a:'a_kp_nke', c:'c_kp_nke', defQ:0,  defA:0,   aStep:0.01,cStep:0.01,
        name:'나이키(NKE)',linkUrl:'https://finance.yahoo.com/quote/NKE',
        usd:true,cat:'개별/테마',    ep:'ep_kp_nke', mode:'combined',usdExp:true},
+      {q:'q_kp_tsla',a:'a_kp_tsla',c:'c_kp_tsla',defQ:20.0044,defA:373.9955,qStep:0.0001,aStep:0.0001,cStep:0.01,
+       name:'테슬라(TSLA)',linkUrl:'https://finance.yahoo.com/quote/TSLA',
+       usd:true,cat:'개별/테마',    ep:'ep_kp_tsla',mode:'combined',usdExp:true},
     ],
-    cash:{id:'cash_kp',def:3170.12,step:0.01,usd:true,cat:'안전자산(현금)',label:'예수금($)'},
+    cash:{id:'cash_kp',def:919.04,step:0.01,usd:true,cat:'안전자산(현금)',label:'예수금($)'},
   },
   {
     key:'토스', badge:'bt',
