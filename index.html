@@ -480,9 +480,9 @@ td.cv, td.ep { display: table-cell !important; vertical-align: middle; }
   <div class="tabs">
     <button class="tab active" onclick="showTab('input',0)">📡 주간 업데이트</button>
     <button class="tab" onclick="showTab('summary',1)">📊 포트폴리오 점검</button>
-    <button class="tab" onclick="showTab('insurance',2)">🛡️ 보장 자산</button>
-    <button class="tab" onclick="showTab('plan',3)">🎯 2030 로드맵</button>
-    <button class="tab" onclick="showTab('retirement',4)">🧓 노후 자금</button>
+    <button class="tab" onclick="showTab('plan',2)">🎯 2030 로드맵</button>
+    <button class="tab" onclick="showTab('retirement',3)">🧓 노후 자금</button>
+    <button class="tab" onclick="showTab('insurance',4)">🛡️ 보장 자산</button>
     <button class="tab" onclick="showTab('history',5)">📁 기록 &amp; 내보내기</button>
   </div>
 
@@ -2518,10 +2518,10 @@ function updIncomeDashboard() {
 }
 
 // ─── 탭 전환 ───
-// 탭 구조 (v2 워크플로우):
-//   0: input(주간업데이트)  1: summary(포트폴리오점검=요약+비중)
-//   2: insurance(보장자산)  3: plan(2030로드맵=계획+전략절세)
-//   4: retirement(퇴직연금) 5: history(기록&내보내기=히스토리+AI복사)
+// 탭 구조 (v3 워크플로우):
+//   0: input(주간업데이트)        1: summary(포트폴리오점검=요약+비중)
+//   2: plan(2030로드맵=계획+전략절세) 3: retirement(노후자금)
+//   4: insurance(보장자산)        5: history(기록&내보내기=히스토리+AI복사)
 function showTab(name, idx) {
   const sec  = document.getElementById('tab-'+name);
   const tabs = document.querySelectorAll('.tab');
