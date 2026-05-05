@@ -500,6 +500,21 @@ td.cv, td.ep { display: table-cell !important; vertical-align: middle; }
       </div>
     </div>
 
+    <!-- ── 다가오는 이벤트 캘린더 (90일) ── -->
+    <div class="card" style="border-left:4px solid #f59e0b;background:linear-gradient(135deg,#fffbeb,#fef3c7);">
+      <div class="ct" style="color:#78350f;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+        📅 다가오는 이벤트
+        <span style="font-size:11px;font-weight:400;color:#92400e;">— 향후 <select id="evt_window" onchange="renderEventCalendar()" style="border:1px solid #fbbf24;background:#fff;border-radius:6px;padding:2px 6px;font-size:11px;font-weight:700;color:#78350f;outline:none;">
+          <option value="30">30일</option>
+          <option value="60">60일</option>
+          <option value="90" selected>90일</option>
+          <option value="180">180일</option>
+          <option value="365">1년</option>
+        </select> 이내 보험 만기 · 예금/적금 만기</span>
+      </div>
+      <div id="evt_list" style="font-size:12px;color:#78350f;line-height:1.9;">⚡ 데이터 로딩 중...</div>
+    </div>
+
     <!-- ══ 계좌 입력 카드 (ACCOUNTS 스키마에서 동적 생성) ══ -->
     <div id="inputCardsHost"></div>
 
@@ -542,6 +557,11 @@ td.cv, td.ep { display: table-cell !important; vertical-align: middle; }
         <div style="display:flex;justify-content:space-between;margin-top:4px;">
           <span style="font-size:10px;color:#94a3b8;" id="goalText">진행률 0%</span>
           <span style="font-size:10px;color:#94a3b8;">목표 300,000,000원</span>
+        </div>
+        <!-- ── 자산수익률 + 실질가치 보조 라인 ── -->
+        <div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.15);display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;font-size:10.5px;">
+          <span style="color:#cbd5e1;">📊 자산수익률: <strong id="s_cagr" style="color:#fff;">기록 누적 시 표시</strong></span>
+          <span style="color:#cbd5e1;">💰 2030 실질가치(인플레 <span id="inflRateLabel">2.5</span>%): <strong id="s_realGoal" style="color:#fff;">-</strong></span>
         </div>
       </div>
       <div class="mc">
@@ -633,6 +653,41 @@ td.cv, td.ep { display: table-cell !important; vertical-align: middle; }
       <div class="ct">계좌별 상세 현황</div>
       <div style="overflow-x:auto;">
         <table id="acct_rows" style="min-width:480px;"></table>
+      </div>
+    </div>
+    <!-- ── 시장 대비 성과 (벤치마크 알파) ── -->
+    <div class="card">
+      <div class="ct">📈 시장 대비 성과 <span style="font-size:11px;font-weight:400;color:#64748b;">(YTD 기준 · 수동 입력)</span></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:12px;">
+        <div style="background:#f8fafc;border-radius:10px;padding:10px 12px;border:1.5px solid #e2e8f0;">
+          <div style="font-size:10px;color:#64748b;font-weight:700;margin-bottom:4px;">내 수익률 (YTD)</div>
+          <div id="bm_my_rate" style="font-size:18px;font-weight:800;color:#0f172a;">-</div>
+        </div>
+        <div style="background:#f8fafc;border-radius:10px;padding:10px 12px;border:1.5px solid #e2e8f0;">
+          <div style="font-size:10px;color:#64748b;font-weight:700;margin-bottom:4px;display:flex;justify-content:space-between;align-items:center;">
+            <span>KOSPI YTD %</span>
+          </div>
+          <input type="number" id="bm_kospi" step="0.01" placeholder="예: 5.10"
+                 oninput="updBenchmark()"
+                 style="width:100%;border:none;background:transparent;font-size:18px;font-weight:800;color:#1D4ED8;outline:none;padding:0;">
+        </div>
+        <div style="background:#f8fafc;border-radius:10px;padding:10px 12px;border:1.5px solid #e2e8f0;">
+          <div style="font-size:10px;color:#64748b;font-weight:700;margin-bottom:4px;">S&amp;P500 YTD %</div>
+          <input type="number" id="bm_spx" step="0.01" placeholder="예: 8.70"
+                 oninput="updBenchmark()"
+                 style="width:100%;border:none;background:transparent;font-size:18px;font-weight:800;color:#1D4ED8;outline:none;padding:0;">
+        </div>
+      </div>
+      <div id="bm_alpha_box" style="background:linear-gradient(135deg,#eff6ff,#dbeafe);border-radius:10px;padding:12px 14px;font-size:12px;color:#1e3a8a;font-weight:700;line-height:1.7;">
+        ⚡ 벤치마크 수익률을 입력하면 알파(초과수익)가 자동 계산됩니다.
+      </div>
+      <div style="margin-top:8px;font-size:10px;color:#94a3b8;line-height:1.7;">
+        💡 <strong>YTD(Year-To-Date)</strong>: 연초(1월 1일) 대비 누적 변동률. 입력값은 자동 저장됩니다.<br>
+        <strong style="color:#475569;">확인 방법 (가장 쉬운 순):</strong><br>
+        ① 구글 검색에 <code style="background:#f1f5f9;padding:1px 5px;border-radius:4px;color:#1d4ed8;">kospi ytd</code> · <code style="background:#f1f5f9;padding:1px 5px;border-radius:4px;color:#1d4ed8;">s&amp;p 500 ytd</code> → 즉시 카드로 표시<br>
+        ② <a href="https://kr.investing.com/indices/kospi" target="_blank" style="color:#1d4ed8;text-decoration:underline;">인베스팅닷컴 KOSPI</a> · <a href="https://kr.investing.com/indices/us-spx-500" target="_blank" style="color:#1d4ed8;text-decoration:underline;">S&amp;P500</a> → 차트에서 <strong>YTD</strong> 버튼 클릭<br>
+        ③ <a href="https://finance.yahoo.com/quote/%5EKS11" target="_blank" style="color:#1d4ed8;text-decoration:underline;">야후 KOSPI(^KS11)</a> · <a href="https://finance.yahoo.com/quote/%5EGSPC" target="_blank" style="color:#1d4ed8;text-decoration:underline;">S&amp;P500(^GSPC)</a> → 차트 YTD 선택<br>
+        예: <code style="background:#f1f5f9;padding:1px 5px;border-radius:4px;">+5.10</code> 입력 시 KOSPI가 연초 대비 5.10% 상승했다는 뜻입니다.
       </div>
     </div>
     <!-- ── 자산군 비중 (통합) ── -->
@@ -749,7 +804,7 @@ td.cv, td.ep { display: table-cell !important; vertical-align: middle; }
       <table class="cf-table">
         <thead><tr><th>계좌</th><th>월 납입액</th><th>납입일/전략</th><th>비고</th></tr></thead>
         <tbody>
-          <tr><td><span class="badge bi" style="font-size:11px;">ISA</span></td><td style="font-weight:800;color:var(--primary);">880,000원</td><td>나스닥 70% + S&P 20%<br><span style="font-size:10px;color:#94a3b8;">4월부터 나스닥 단독 90만</span></td><td style="font-size:10px;color:#888;">한국투자증권</td></tr>
+          <tr><td><span class="badge bi" style="font-size:11px;">ISA</span></td><td style="font-weight:800;color:var(--primary);">880,000원</td><td>나스닥 68만원 + S&P 20만원</td><td style="font-size:10px;color:#888;">한국투자증권</td></tr>
           <tr><td><span class="badge bp" style="font-size:11px;">연금/IRP</span></td><td style="font-weight:800;color:var(--primary);">200,000원</td><td>매월 25일</td><td style="font-size:10px;color:#888;">세액공제 혜택</td></tr>
           <tr><td><span class="badge bd" style="font-size:11px;">DC</span></td><td style="font-weight:800;color:#10b981;">228,000원</td><td>S&P / AI / 휴머노이드 분할</td><td style="font-size:10px;color:#888;">회사 납입 (본인 부담 없음)</td></tr>
           <tr><td><span class="badge bt" style="font-size:11px;">토스</span></td><td style="font-weight:800;color:var(--primary);">80,000원</td><td>우주항공 매월 1일 5주</td><td style="font-size:10px;color:#888;">토스증권</td></tr>
@@ -1141,7 +1196,8 @@ const ALL_FIELDS = [
   'q_kp_nke','a_kp_nke','c_kp_nke','q_kp_tsla','a_kp_tsla','c_kp_tsla','cash_kp',
   'q_toss','a_toss','c_toss','q_toss_nvda','a_toss_nvda','c_toss_nvda','cash_toss',
   'dep','dep_d','sav','sav_d','chq','emg1','emg2','emg3',
-  'base_monthly_sav', 'sim_rate', 'extra_monthly', 'annual_income'
+  'base_monthly_sav', 'sim_rate', 'extra_monthly', 'annual_income',
+  'bm_kospi', 'bm_spx'
 ];
 
 // 미국 주식/ETF (Yahoo Finance v7 배치)
@@ -1849,6 +1905,12 @@ function updSummary() {
   document.getElementById('goalFill').style.width = Math.min(goalPct,100)+'%';
   sv('goalText', '진행률 '+goalPct.toFixed(1)+'%');
 
+  // ─── CAGR + 2030 실질가치 ───
+  updCagrAndRealGoal();
+
+  // ─── 시장 대비 성과 (벤치마크 알파) ───
+  updBenchmark();
+
   sv('s_usd_drop', '-'+fmt(Math.round(D.usdExposureKRW / D.rate * 100))+'원');
   // 실제 수량×주당분배금 계산값 우선 사용, 없으면 자산기반 추정
   const incomeEst = D.incomeMonthly > 0
@@ -1913,6 +1975,111 @@ function updSummary() {
   sv('sim_gap', gap>0 ? `목표 3억 대비 부족분: ${fmt(gap)}원` : `🎉 목표 달성 예상! 여유분: ${fmt(-gap)}원`);
   const gapEl = document.getElementById('sim_gap');
   if (gapEl) gapEl.style.color = gap>0?'#EF4444':'#10b981';
+}
+
+// ─── 연환산수익률(CAGR) + 단순수익률 + 2030 실질가치 ───
+// 연환산은 *경과 1년 이상* 일 때만 의미가 있음.
+//   · 1년 미만은 단순수익률(누적 변동률)만 표시 — 연환산하면 짧은 기간이 폭발적으로 부풀려짐
+//   · 1년 이상은 진짜 CAGR : (현재/최초)^(1/연수) − 1
+// 실질가치: 2030년 명목 목표(3억)를 인플레로 할인하여 현재 가치로 환산
+//   · realGoal = 300_000_000 / (1+infl)^(2030 − 현재년도)
+const INFLATION_RATE = 0.025;   // 연 2.5% (수정 시 코드 상단 한 곳만 변경)
+function updCagrAndRealGoal() {
+  // ─ 수익률 (단순/연환산 자동 분기) ─
+  const cagrEl = document.getElementById('s_cagr');
+  if (cagrEl) {
+    const hist = (typeof loadHistory === 'function') ? loadHistory() : [];
+    // 가장 오래된 스냅샷(=배열 마지막) 기준
+    const oldest = hist.length > 0 ? hist[hist.length - 1] : null;
+    if (oldest && D.grand > 0 && oldest.total > 0 && oldest.date !== todayKST()) {
+      const d0 = new Date(oldest.date);
+      const d1 = new Date();
+      const days  = Math.max(1, Math.round((d1 - d0) / 86400000));
+      const years = days / 365.25;
+      const totalPct = (D.grand / oldest.total - 1) * 100;
+      const sign = totalPct >= 0 ? '+' : '';
+
+      if (years >= 1) {
+        // 1년 이상: 연환산수익률(CAGR)
+        const cagr = (Math.pow(D.grand / oldest.total, 1 / years) - 1) * 100;
+        const sign2 = cagr >= 0 ? '+' : '';
+        cagrEl.textContent = `${sign2}${cagr.toFixed(2)}% (기록기간 ${years.toFixed(1)}년)`;
+      } else {
+        // 1년 미만: 단순 누적수익률
+        cagrEl.textContent = `${sign}${totalPct.toFixed(2)}% [단순] (기록 ${days}일 — 1년 누적 시 연환산 표시)`;
+      }
+    } else {
+      cagrEl.textContent = `기록 누적 시 표시 (현재 ${hist.length}건)`;
+    }
+  }
+
+  // ─ 2030 실질가치 ─
+  const realEl = document.getElementById('s_realGoal');
+  const lblEl  = document.getElementById('inflRateLabel');
+  if (lblEl) lblEl.textContent = (INFLATION_RATE*100).toFixed(1);
+  if (realEl) {
+    const yearNow = new Date().getFullYear();
+    const yearsLeft = Math.max(0, 2030 - yearNow);
+    const real = 300000000 / Math.pow(1 + INFLATION_RATE, yearsLeft);
+    realEl.textContent = `약 ${fmt(Math.round(real))}원`;
+  }
+}
+
+// ─── 시장 대비 성과 (벤치마크 알파) ───
+// · 내 수익률 = 전체 수익률(rPct) — D.tE-D.tC 기반
+// · KOSPI/S&P500 YTD%는 사용자 수동 입력 (localStorage 자동 저장)
+// · 알파(α) = 내 수익률 − 벤치마크
+function updBenchmark() {
+  const myRateEl = document.getElementById('bm_my_rate');
+  const boxEl    = document.getElementById('bm_alpha_box');
+  if (!myRateEl || !boxEl) return;
+
+  // 내 수익률
+  const pnl  = D.tE - D.tC;
+  const rPct = D.tC > 0 ? pnl / D.tC * 100 : 0;
+  const hasMy = D.tC > 0;
+  if (hasMy) {
+    const sign = rPct >= 0 ? '+' : '';
+    myRateEl.textContent = `${sign}${rPct.toFixed(2)}%`;
+    myRateEl.style.color = rPct >= 0 ? '#10b981' : '#ef4444';
+  } else {
+    myRateEl.textContent = '계산 필요';
+    myRateEl.style.color = '#94a3b8';
+  }
+
+  // 벤치마크 입력값
+  const kospi = parseFloat(document.getElementById('bm_kospi')?.value);
+  const spx   = parseFloat(document.getElementById('bm_spx')?.value);
+  const hasK = Number.isFinite(kospi);
+  const hasS = Number.isFinite(spx);
+
+  if (!hasMy || (!hasK && !hasS)) {
+    boxEl.innerHTML = '⚡ 전체 계산 후 KOSPI / S&amp;P500 YTD%를 입력하면 알파(초과수익)가 계산됩니다.';
+    boxEl.style.background = 'linear-gradient(135deg,#eff6ff,#dbeafe)';
+    boxEl.style.color = '#1e3a8a';
+    return;
+  }
+
+  const fmtAlpha = (a) => {
+    const sign = a >= 0 ? '+' : '';
+    return `${sign}${a.toFixed(2)}%p`;
+  };
+  const verdict = (a) => a >= 0 ? '초과수익 ✅' : '시장 대비 부진 ⚠️';
+
+  let html = '';
+  if (hasK) {
+    const a = rPct - kospi;
+    const color = a >= 0 ? '#065f46' : '#991b1b';
+    html += `<div style="margin-bottom:6px;">vs <strong>KOSPI</strong>: 알파 <span style="color:${color};font-weight:800;">${fmtAlpha(a)}</span> &nbsp;<span style="font-size:11px;color:#64748b;font-weight:600;">(${verdict(a)})</span></div>`;
+  }
+  if (hasS) {
+    const a = rPct - spx;
+    const color = a >= 0 ? '#065f46' : '#991b1b';
+    html += `<div>vs <strong>S&amp;P500</strong>: 알파 <span style="color:${color};font-weight:800;">${fmtAlpha(a)}</span> &nbsp;<span style="font-size:11px;color:#64748b;font-weight:600;">(${verdict(a)})</span></div>`;
+  }
+  boxEl.innerHTML = html;
+  boxEl.style.background = 'linear-gradient(135deg,#f0fdf4,#dcfce7)';
+  boxEl.style.color = '#064e3b';
 }
 
 // ─── SVG 도넛 차트 (라이브러리 없음, 바닐라 JS만 사용) ───
@@ -2297,6 +2464,95 @@ const INS_DATA = [
   }
 ];
 
+// ─── 다가오는 이벤트 캘린더 ───
+// 데이터 소스 2가지를 통합:
+//   1) 보험 8종 만기 → INS_DATA의 end 필드 (납입중 항목만; 완납은 평생보장이므로 제외)
+//   2) 예금/적금 만기 → dep_d / sav_d 입력칸 (값 변경 시에도 자동 반영)
+// ※ 분기배당은 정확한 분배기준일이 ETF별로 달라 표시하지 않음 (오인 방지)
+function renderEventCalendar() {
+  const list = document.getElementById('evt_list');
+  if (!list) return;
+
+  const winSel = document.getElementById('evt_window');
+  const windowDays = winSel ? parseInt(winSel.value, 10) : 90;
+
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  const limit = new Date(today.getTime() + windowDays * 86400000);
+
+  const events = [];
+
+  // 1) 보험 만기 — 납입중인 것만 (완납 = 평생보장이므로 알림 불필요)
+  INS_DATA.forEach(ins => {
+    if (ins.status === '완납') return;
+    const d = new Date(ins.end);
+    if (Number.isNaN(d.getTime())) return;
+    events.push({
+      date: d,
+      type: '보험',
+      icon: '🛡️',
+      title: `${ins.name} 보장만기`,
+      desc: `월 ${ins.price.toLocaleString('ko-KR')}원 · 갱신/유지 검토`,
+      color: '#dc2626'
+    });
+  });
+
+  // 2) 예금/적금 만기
+  const depDateStr = document.getElementById('dep_d')?.value;
+  const depAmt     = parseFloat(document.getElementById('dep')?.value) || 0;
+  if (depDateStr) {
+    const d = new Date(depDateStr);
+    if (!Number.isNaN(d.getTime())) {
+      events.push({
+        date: d, type: '예금', icon: '🏦',
+        title: `신협 예금 만기 (${depAmt.toLocaleString('ko-KR')}원)`,
+        desc: 'ISA 추가 매수 or 재예치 결정',
+        color: '#1d4ed8'
+      });
+    }
+  }
+  const savDateStr = document.getElementById('sav_d')?.value;
+  const savAmt     = parseFloat(document.getElementById('sav')?.value) || 0;
+  if (savDateStr) {
+    const d = new Date(savDateStr);
+    if (!Number.isNaN(d.getTime())) {
+      events.push({
+        date: d, type: '적금', icon: '💰',
+        title: `토스적금 만기 (${savAmt.toLocaleString('ko-KR')}원)`,
+        desc: 'ISA 한도 내 일괄 매수 예정',
+        color: '#1d4ed8'
+      });
+    }
+  }
+
+  // 윈도우 필터 + 정렬
+  const filtered = events
+    .filter(e => e.date >= today && e.date <= limit)
+    .sort((a, b) => a.date - b.date);
+
+  if (filtered.length === 0) {
+    list.innerHTML = `<div style="color:#92400e;font-weight:700;padding:6px 0;">✅ 향후 ${windowDays}일 이내 예정된 이벤트가 없습니다.</div>`;
+    return;
+  }
+
+  const fmtDate = d => `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
+  const dDay = d => Math.round((d - today) / 86400000);
+
+  list.innerHTML = filtered.map(e => {
+    const dd = dDay(e.date);
+    const ddStr = dd === 0 ? 'D-DAY' : (dd > 0 ? `D-${dd}` : `D+${-dd}`);
+    const urgent = dd <= 14;
+    return `
+      <div style="background:#fff;border-radius:10px;padding:9px 12px;margin-bottom:6px;border-left:3px solid ${e.color};display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <span style="font-size:18px;">${e.icon}</span>
+        <span style="background:${urgent?'#fee2e2':'#f1f5f9'};color:${urgent?'#991b1b':'#475569'};font-size:10px;font-weight:800;padding:3px 8px;border-radius:6px;min-width:54px;text-align:center;">${ddStr}</span>
+        <span style="font-size:11px;color:#64748b;font-weight:700;min-width:84px;">${fmtDate(e.date)}</span>
+        <span style="font-weight:700;color:#0f172a;flex:1;min-width:160px;">${e.title}</span>
+        <span style="font-size:10px;color:#64748b;flex-basis:100%;margin-left:32px;">${e.desc}</span>
+      </div>`;
+  }).join('');
+}
+
 function renderInsurance() {
   const today = new Date();
   const monthly   = INS_DATA.reduce((s,i)=>s+i.price,0);
@@ -2533,6 +2789,7 @@ function showTab(name, idx) {
   if (name==='history') renderHistory();
   if (name==='plan') updStrategy();
   if (name==='retirement') initRetirementTab();
+  if (name==='input') renderEventCalendar();
 }
 
 // ─── 히스토리 ───
@@ -3250,6 +3507,12 @@ window.onload = () => {
   // 기준일은 항상 오늘 날짜로 재설정 (캐시된 날짜가 덮어쓰지 않도록)
   document.getElementById('baseDate').value = todayKST();
   renderRoadmap();  // 2030 로드맵 렌더링 (localStorage 우선)
+  renderEventCalendar();  // 다가오는 이벤트 캘린더 (90일)
+  // 적금/예금 만기일 변경 시 캘린더 자동 갱신
+  ['dep_d','sav_d','dep','sav'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('input', renderEventCalendar);
+  });
   // 🚫 loadFromGAS() 자동 실행 금지 → "☁️ GAS 로드" 버튼 클릭 시 수동 실행
   // 🚫 fetchPrices() 자동 실행 금지 → "📡 시세 불러오기" 버튼 클릭 시 수동 실행
 };
