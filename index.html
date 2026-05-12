@@ -460,6 +460,219 @@ td.cv, td.ep { display: table-cell !important; vertical-align: middle; }
 
 /* 총자산 진행률 텍스트 */
 #goalText { font-weight: 800 !important; }
+
+/* ╔══════════════════════════════════════════════════════════════╗
+   ║  📱 MOBILE RESPONSIVE PATCH v2 — 전 영역 모바일 최적화        ║
+   ║  ─ 480px(작은 폰) · 640px(큰 폰) 2단 브레이크포인트          ║
+   ║  ─ 데스크톱 뷰는 일절 변경 없음                              ║
+   ╚══════════════════════════════════════════════════════════════╝ */
+
+/* ── ⓪ 공통: 좁은 화면 기본 패딩 & 헤더 ───────────────────────── */
+@media (max-width: 640px) {
+  .wrap { padding: 1rem 0.85rem; }
+
+  /* 페이지 헤더 — 세로 스택 + 버튼 가로 꽉 채움 */
+  .page-header { flex-direction: column; align-items: stretch; gap: 10px; }
+  .page-header h1 { font-size: 21px; }
+  .page-header > div:last-child { width: 100%; display: grid !important; grid-template-columns: 1fr 1fr; gap: 6px !important; }
+  .page-header > div:last-child .btn-p { width: 100%; padding: 10px 8px; font-size: 11px; }
+  .page-header > div:last-child .btn-p:last-child { grid-column: span 2; }
+
+  /* 탭 — 행 줄바꿈 가능 + 작은 폰트 */
+  .tabs { padding: 4px; gap: 3px; }
+  .tab { padding: 7px 10px; font-size: 10.5px; flex: 1 1 auto; min-width: 0; }
+
+  /* 카드 — 패딩 축소 */
+  .card { padding: 1.1rem 1rem; border-radius: 16px; }
+  .ct { font-size: 12.5px; margin-bottom: 10px; }
+}
+
+@media (max-width: 480px) {
+  .wrap { padding: 0.85rem 0.7rem; }
+  .page-header h1 { font-size: 19px; }
+
+  /* mgrid — 1열로 (작은 폰) */
+  .mgrid { grid-template-columns: 1fr !important; gap: 8px; }
+  .mc { padding: 14px 16px; }
+  .mv { font-size: 18px !important; }
+  .ml { font-size: 9.5px; }
+
+  /* 카드 패딩 더 축소 */
+  .card { padding: 0.95rem 0.85rem; }
+}
+
+/* ── ① 보장 자산 탭 (보험) ───────────────────────────────────── */
+@media (max-width: 640px) {
+  /* 상단 메트릭 2장 — 1열로 */
+  #tab-insurance .mgrid { grid-template-columns: 1fr !important; }
+
+  /* 보험 상세표 — 가로 스크롤 허용하되 폰트 축소 */
+  #tab-insurance table { min-width: 680px !important; font-size: 10.5px; }
+  #tab-insurance th, #tab-insurance td { padding: 7px 5px !important; }
+
+  /* 보험 상세 펼침 영역 — 라벨/값 세로 스택 */
+  .ins-detail-inner { padding: 10px 12px; }
+  .ins-detail-inner .di { flex-direction: column; gap: 1px; margin-bottom: 6px; }
+  .ins-detail-inner .di-key { min-width: 0; font-size: 10px; }
+  .ins-detail-inner .di-val { font-size: 11.5px; }
+}
+
+/* ── ② 2030 로드맵 (tab-plan) ────────────────────────────────── */
+@media (max-width: 640px) {
+  /* 시뮬레이터 컨테이너 — 세로 스택 */
+  #tab-plan .card > div[style*="background:#EFF6FF"][style*="padding:18px"] {
+    flex-direction: column !important;
+    text-align: center;
+    padding: 14px !important;
+    gap: 10px !important;
+  }
+  /* 연산자 (+ / =) — 작게 */
+  #tab-plan .card > div[style*="background:#EFF6FF"] > div[style*="font-size:22px"] {
+    font-size: 14px !important;
+    opacity: 0.4;
+  }
+  /* 시뮬레이터 숫자 — 적당히 축소 */
+  #sim_current, #sim_acc, #sim_return { font-size: 17px !important; }
+  #sim_future { font-size: 21px !important; }
+
+  /* 가변 입력 컨트롤 — 1열 그리드 */
+  #tab-plan .card > div[style*="flex-wrap:wrap"][style*="align-items:center"] {
+    flex-direction: column;
+    align-items: stretch !important;
+  }
+  #base_monthly_sav, #sim_rate { width: 100% !important; font-size: 14px !important; }
+
+  /* 구매력 계산기 3열 → 1열 (작은 폰) */
+  #tab-plan div[style*="grid-template-columns:1fr 1fr 1fr"] {
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+  }
+  /* 연소득 입력칸 */
+  #annual_income { width: 100% !important; font-size: 14px !important; }
+
+  /* 주택/노후 바구니 2열 → 1열 */
+  #tab-plan div[style*="grid-template-columns:1fr 1fr"] {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  /* 절세 트래커 / 시나리오 / 구입 후 순자산 그리드 모두 1열 */
+  #tab-plan .card div[style*="grid-template-columns:1fr 1fr"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* 현금흐름 표 — 컬럼 폭 조정 */
+  .cf-table th, .cf-table td { font-size: 10px !important; padding: 6px 5px !important; }
+  .cf-table td:nth-child(4), .cf-table th:nth-child(4) { display: none; }
+}
+
+@media (max-width: 480px) {
+  /* 시뮬레이터 숫자 더 축소 */
+  #sim_future { font-size: 19px !important; }
+  #sim_current, #sim_acc, #sim_return { font-size: 16px !important; }
+}
+
+/* ── ③ 노후 자금 탭 (tab-retirement) ─────────────────────────── */
+@media (max-width: 640px) {
+  /* mgrid 메트릭 4장 → 2장 (이미 글로벌에 있음 — 강화) */
+  #tab-retirement .mgrid { grid-template-columns: repeat(2, 1fr) !important; gap: 8px; }
+
+  /* 설정 입력 표 — 콤팩트 */
+  #tab-retirement .card table th,
+  #tab-retirement .card table td { padding: 6px 5px !important; font-size: 10.5px; }
+  #ret_initial, #ret_annual_rate { font-size: 12px; padding: 7px 8px; }
+
+  /* 적립/인출 시뮬레이션 표 — 가로 스크롤 처리 */
+  #tab-retirement .card > div[style*="overflow"],
+  #tab-retirement .card table:not(:first-of-type) { font-size: 10px; }
+}
+
+@media (max-width: 480px) {
+  #tab-retirement .mgrid { grid-template-columns: 1fr !important; }
+}
+
+/* ── ④ 포트폴리오 점검 (tab-summary) ─────────────────────────── */
+@media (max-width: 640px) {
+  /* 도넛 차트 — 화면에 맞게 */
+  #weight_donut { max-width: 100% !important; height: auto; }
+  #weight_donut_legend { font-size: 9.5px !important; gap: 4px 8px !important; }
+
+  /* 비중 바 차트 라벨 폰트 */
+  #weight_bars { font-size: 10.5px; }
+  #contrib_bars { font-size: 10.5px; }
+
+  /* 리밸런싱 테이블 — 폰트 축소하여 가로스크롤 최소화 */
+  #rebalance_table { min-width: 440px !important; font-size: 9.5px !important; }
+  #rebalance_table th, #rebalance_table td { padding: 5px 3px !important; }
+
+  /* 환율 스트레스 카드 내부 그리드 */
+  #stress_card div[style*="grid-template-columns"] {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 6px !important;
+  }
+}
+
+/* ── ⑤ 기록 탭 (tab-history) ─────────────────────────────────── */
+@media (max-width: 640px) {
+  /* 헤더 배너 버튼들 — 세로 스택 + 풀폭 */
+  #tab-history > .card:first-child > div { flex-direction: column; align-items: stretch !important; }
+  #tab-history > .card:first-child > div > div:last-child { display: grid !important; grid-template-columns: 1fr 1fr; gap: 6px; }
+  #tab-history > .card:first-child .btn-p { width: 100%; padding: 9px 6px; font-size: 10.5px; }
+  #tab-history > .card:first-child label { display: block; }
+  #tab-history > .card:first-child label > span.btn-p { width: 100%; text-align: center; }
+
+  /* AI 텍스트 박스 — 높이 축소 */
+  #export_box { height: 220px !important; font-size: 11px !important; padding: 10px !important; }
+
+  /* 히스토리 상세표 — 폰트 축소로 가독성 확보 */
+  .hd-tbl, .hd-tbl-save, .hd-sum-tbl { font-size: 10px; min-width: 380px !important; }
+  .hd-tbl th, .hd-tbl td, .hd-tbl-save th, .hd-tbl-save td { padding: 4px 5px !important; }
+  .hd-banner { gap: 8px; padding: 8px 10px; font-size: 10px; }
+  .hd-h2, .hd-h2-m10 { font-size: 11.5px; }
+}
+
+@media (max-width: 480px) {
+  /* 히스토리 카드 폰트 */
+  .hist-card { padding: 12px 13px; }
+  .hist-card-date { font-size: 11px; }
+  .hist-card-total { font-size: 14px; }
+  .hist-card-grid { gap: 6px; }
+  .hist-card-value { font-size: 11px; }
+}
+
+/* ── ⑥ 입력 탭 (tab-input) 추가 보강 ─────────────────────────── */
+@media (max-width: 640px) {
+  /* 기준일/환율 입력 박스 — 가로 꽉 차게 분할 */
+  #tab-input > div[style*="display:flex"][style*="gap:12px"]:first-of-type {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px !important;
+  }
+  #tab-input > div[style*="display:flex"][style*="gap:12px"]:first-of-type > div {
+    padding: 8px 10px !important;
+  }
+  #usdRate { width: 100% !important; }
+
+  /* 다가오는 이벤트 카드 */
+  #evt_list { font-size: 11px; line-height: 1.7; }
+}
+
+/* ── ⑦ 터치 친화 — 입력칸 최소 높이 보장 ─────────────────────── */
+@media (max-width: 640px) {
+  input[type=number],
+  input[type=text],
+  input[type=date],
+  select { min-height: 38px; font-size: 12.5px; }
+
+  .btn-p { min-height: 40px; }
+  .btn-sm { min-height: 34px; }
+}
+
+/* ── ⑧ 가로 모드 대응 (랜드스케이프) ─────────────────────────── */
+@media (max-width: 900px) and (orientation: landscape) and (max-height: 500px) {
+  .wrap { padding: 0.8rem 1rem; }
+  .page-header { flex-direction: row; }
+}
 </style>
 </head>
 <body>
