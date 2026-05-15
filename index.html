@@ -1404,9 +1404,8 @@ const ALL_FIELDS = [
   'q_irp_div','a_irp_div','c_irp_div','cash_irp',
   'q_pen_nq','a_pen_nq','c_pen_nq','cash_pen',
   'q_gold','a_gold','c_gold','cash_gold',
-  'q_kp_soxl','a_kp_soxl','c_kp_soxl',
-  'q_kp_rkt','a_kp_rkt','c_kp_rkt',
-  'q_kp_nke','a_kp_nke','c_kp_nke','q_kp_tsla','a_kp_tsla','c_kp_tsla','cash_kp',
+  // 🆕 v2.3: 카카오페이는 "카카오페이" 시트 탭에서 동적 로드 — ALL_FIELDS에서 제외
+  //         (localStorage/GAS 저장 대상 아님 — 시트가 단독 진실의 원천)
   'q_toss','a_toss','c_toss','q_toss_nvda','a_toss_nvda','c_toss_nvda','cash_toss',
   'dep','dep_d','sav','sav_d','chq','emg1','emg2','emg3',
   'base_monthly_sav', 'sim_rate', 'extra_monthly', 'annual_income',
@@ -1414,13 +1413,10 @@ const ALL_FIELDS = [
 ];
 
 // 미국 주식/ETF (Yahoo Finance v7 배치)
+// 🆕 v2.3: 카카오페이 티커는 시트 로드 후 fetchPrices()에서 동적 추가
 const PRICE_MAP_US = [
   { sym:'GC=F',  ids:['__gold__'],   label:'금시세', isGold:true },
   { sym:'NVDA',  ids:['c_toss_nvda'],label:'NVDA'  },
-  { sym:'SOXL',  ids:['c_kp_soxl'],  label:'SOXL'  },
-  { sym:'RKLB',  ids:['c_kp_rkt'],   label:'RKLB'  },
-  { sym:'NKE',   ids:['c_kp_nke'],   label:'NKE'   },
-  { sym:'TSLA',  ids:['c_kp_tsla'],  label:'TSLA'  },
 ];
 // 한국 ETF (네이버 금융 모바일 API)
 const PRICE_MAP_KRX = [
@@ -1551,23 +1547,13 @@ const ACCOUNTS = [
   },
   {
     key:'카카오페이', badge:'bk',
-    subtitle:'스윙전용',
+    subtitle:'스윙전용 — 시트 연동 (단방향)',
     layout:'combined', currency:'usd',
-    holdings:[
-      {q:'q_kp_soxl',a:'a_kp_soxl',c:'c_kp_soxl',defQ:0, defA:49.48,aStep:0.01,cStep:0.01,
-       name:'SOXL',linkUrl:'https://finance.yahoo.com/quote/SOXL',
-       usd:true,cat:'반도체/AI/혁신',ep:'ep_kp_soxl',mode:'combined',usdExp:true},
-      {q:'q_kp_rkt', a:'a_kp_rkt', c:'c_kp_rkt', defQ:15,defA:78.19,aStep:0.01,cStep:0.01,
-       name:'로켓랩',linkUrl:'https://finance.yahoo.com/quote/RKLB',
-       usd:true,cat:'개별/테마',    ep:'ep_kp_rkt', mode:'combined',usdExp:true},
-      {q:'q_kp_nke', a:'a_kp_nke', c:'c_kp_nke', defQ:0,  defA:0,   aStep:0.01,cStep:0.01,
-       name:'나이키(NKE)',linkUrl:'https://finance.yahoo.com/quote/NKE',
-       usd:true,cat:'개별/테마',    ep:'ep_kp_nke', mode:'combined',usdExp:true},
-      {q:'q_kp_tsla',a:'a_kp_tsla',c:'c_kp_tsla',defQ:20.0044,defA:373.9955,qStep:0.0001,aStep:0.0001,cStep:0.01,
-       name:'테슬라(TSLA)',linkUrl:'https://finance.yahoo.com/quote/TSLA',
-       usd:true,cat:'개별/테마',    ep:'ep_kp_tsla',mode:'combined',usdExp:true},
-    ],
-    cash:{id:'cash_kp',def:919.04,step:0.01,usd:true,cat:'안전자산(현금)',label:'예수금($)'},
+    // 🆕 v2.3: holdings는 페이지 로드 시 loadKakaopayFromSheet()로 시트에서 채움.
+    //         빈 골격으로 시작 — 시트 로드 실패 시 빈 카드 표시 (안전).
+    holdings:[],
+    cash:{id:'cash_kp',def:0,step:0.01,usd:true,cat:'안전자산(현금)',label:'예수금($)',readonly:true},
+    kakaopayDynamic:true,  // 동적 렌더링 플래그
   },
   {
     key:'토스', badge:'bt',
@@ -1640,15 +1626,18 @@ function renderInputCards() {
     : h.name;
 
   // ─── 공통 input 속성 빌더 ───
-  const inp = (id, def, step) => {
+  // 🆕 v2.3: readonly 옵션 추가 (카카오페이 시트 동기 종목용)
+  const inp = (id, def, step, readonly) => {
     const stepAttr = step ? ` step="${step}"` : '';
     const valAttr  = (def !== undefined && def !== null) ? ` value="${def}"` : '';
-    return `<input type="number" id="${id}"${valAttr}${stepAttr}>`;
+    const roAttr   = readonly ? ' readonly style="background:#F1F5F9;color:#475569;cursor:not-allowed;" title="시트에서 수정"' : '';
+    return `<input type="number" id="${id}"${valAttr}${stepAttr}${roAttr}>`;
   };
-  const inpPh = (id, ph, step) => {
+  const inpPh = (id, ph, step, readonly) => {
     const stepAttr = step ? ` step="${step}"` : '';
     const phAttr   = ph ? ` placeholder="${ph}"` : '';
-    return `<input type="number" id="${id}"${phAttr}${stepAttr}>`;
+    const roAttr   = readonly ? ' readonly style="background:#F1F5F9;color:#475569;cursor:not-allowed;" title="시트에서 수정"' : '';
+    return `<input type="number" id="${id}"${phAttr}${stepAttr}${roAttr}>`;
   };
 
 // ─── 계좌 카드 HTML 빌더 ───
@@ -1664,10 +1653,12 @@ function renderInputCards() {
     let rows = '';
 
     // 1. 일반 종목 (현재가 입력창 생성 파트)
+    // 🆕 v2.3: 카카오페이 동적 카드인 경우 수량·평단은 readonly (시트에서만 수정)
     acct.holdings.forEach(h => {
-      const qInput = inp(h.q, h.defQ, h.qStep);
-      const aInput = inp(h.a, h.defA, h.aStep);
-      const cInput = inpPh(h.c, h.cPlaceholder, h.cStep);
+      const isKpDyn  = acct.kakaopayDynamic === true;
+      const qInput = inp(h.q, h.defQ, h.qStep, isKpDyn);
+      const aInput = inp(h.a, h.defA, h.aStep, isKpDyn);
+      const cInput = inpPh(h.c, h.cPlaceholder, h.cStep);  // 현재가는 시세 자동 갱신이라 readonly 불필요
       const nameTd = `<td>${nameCell(h)}</td>`;
 
       if (acct.layout === 'split') {
@@ -1692,8 +1683,9 @@ function renderInputCards() {
     });
 
     // 3. 예수금 행
+    // 🆕 v2.3: 카카오페이 예수금은 readonly (시트 H1에서만 수정)
     const c = acct.cash;
-    const cashInput = inp(c.id, c.def, c.step);
+    const cashInput = inp(c.id, c.def, c.step, c.readonly === true);
     if (acct.layout === 'split') {
       rows += `<tr><td colspan="4" style="color:#888;">${c.label}</td><td colspan="2" data-label="금액">${cashInput}</td></tr>`;
     } else if (acct.layout === 'gold') {
@@ -1850,6 +1842,66 @@ function setSyncStatus(msg) {
   if (el) el.textContent = msg;
 }
 
+// ════════════════════════════════════════════════════════════════════
+// 🆕 v2.3 — 카카오페이 시트 데이터 로드 (단방향: 시트 → 대시보드)
+//
+// 흐름:
+//   1) GAS ?action=kakaopay 호출 → "카카오페이" 탭 종목/예수금 수신
+//   2) ACCOUNTS의 카카오페이 항목의 holdings를 동적으로 채워넣음
+//   3) PRICE_MAP_US에 카카오페이 티커들을 동적 추가 (시세 조회 대상에 포함)
+//
+// 이 함수는 window.onload에서 renderInputCards() *이전*에 await 호출되어야 함
+// (안 그러면 빈 카드가 그려짐)
+// ════════════════════════════════════════════════════════════════════
+async function loadKakaopayFromSheet() {
+  try {
+    const url = `${GAS_URL}?action=kakaopay&token=${encodeURIComponent(GAS_TOKEN)}`;
+    const res = await fetchWithTimeout(url);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const json = await res.json();
+
+    if (json.status !== 'ok' || !json.data) {
+      console.warn('[카카오페이] 시트 응답 이상:', json);
+      return false;
+    }
+
+    const kp = ACCOUNTS.find(a => a.key === '카카오페이');
+    if (!kp) { console.warn('[카카오페이] ACCOUNTS에서 항목 없음'); return false; }
+
+    // ── holdings 동적 구성 (ID는 티커 기반: q_kp_<TICKER>, a_kp_<TICKER>, ...) ──
+    kp.holdings = (json.data.holdings || []).map(h => {
+      const t = h.ticker;
+      return {
+        q:        `q_kp_${t}`,
+        a:        `a_kp_${t}`,
+        c:        `c_kp_${t}`,
+        ep:       `ep_kp_${t}`,
+        defQ:     h.qty,
+        defA:     h.avg,
+        qStep:    0.000001,
+        aStep:    0.0001,
+        cStep:    0.01,
+        name:     h.name || t,
+        ticker:   t,
+        linkUrl:  `https://finance.yahoo.com/quote/${t}`,
+        usd:      true,
+        cat:      h.cat || '개별/테마',
+        mode:     'combined',
+        usdExp:   true
+      };
+    });
+
+    // ── 예수금 ($) ──
+    kp.cash.def = parseFloat(json.data.cash) || 0;
+
+    console.log('[카카오페이] 시트 로드 완료 — 종목 ' + kp.holdings.length + '개, 예수금 $' + kp.cash.def);
+    return true;
+  } catch (e) {
+    console.warn('[카카오페이] 시트 로드 실패:', e);
+    return false;
+  }
+}
+
 // ─── GAS 로드 (불러오기) ───
 async function loadFromGAS() {
   if (!confirm('현재 화면 입력값이 서버 데이터로 덮어써집니다. 계속할까요?')) return; // 
@@ -1933,6 +1985,29 @@ async function saveToGAS() {
 // ─── 시세 일괄 조회 (GAS 프록시 사용) ───
 async function fetchPrices() {
   setSyncStatus('📡 구글 서버(GAS)에서 시세 일괄 조회 중...');
+
+  // 🆕 v2.3: 카카오페이 동적 종목을 PRICE_MAP_US에 즉시 추가 (매 호출마다 갱신)
+  //   - 시트에 종목 추가/삭제하면 다음 시세 조회부터 자동 반영
+  //   - 기존 PRICE_MAP_US의 sym(GC=F, NVDA)과 중복 안 되도록 체크
+  const kpAcct = ACCOUNTS.find(a => a.key === '카카오페이');
+  if (kpAcct && Array.isArray(kpAcct.holdings)) {
+    const existingSyms = new Set(PRICE_MAP_US.map(m => m.sym));
+    // 기존에 추가됐던 카카오페이 항목 제거 (다음 갱신을 위해)
+    for (let i = PRICE_MAP_US.length - 1; i >= 0; i--) {
+      if (PRICE_MAP_US[i]._fromKakaopay) PRICE_MAP_US.splice(i, 1);
+    }
+    // 현재 시트 기준 티커 추가
+    kpAcct.holdings.forEach(h => {
+      if (!h.ticker) return;
+      if (existingSyms.has(h.ticker)) return;  // NVDA 같은 다른 계좌 중복 회피
+      PRICE_MAP_US.push({
+        sym:   h.ticker,
+        ids:   [h.c],          // 동적 현재가 ID (예: c_kp_SOXL)
+        label: h.ticker,
+        _fromKakaopay: true
+      });
+    });
+  }
 
   try {
     const url = `${GAS_URL}?action=price&token=${encodeURIComponent(GAS_TOKEN)}`;
@@ -3711,7 +3786,12 @@ function cancelRoadmapEdit() {
   renderRoadmap();
 }
 
-window.onload = () => {
+window.onload = async () => {
+  // 🆕 v2.3: 카카오페이 시트 데이터를 먼저 로드 → ACCOUNTS.kakaopay.holdings 채움
+  //   - 네트워크 지연 시 빈 카드로 폴백 (loadKakaopayFromSheet 내부에서 처리)
+  //   - 반드시 renderInputCards() *이전*에 await 되어야 동적 종목 카드가 생성됨
+  await loadKakaopayFromSheet();
+
   renderInputCards();  // ⚠ 반드시 최우선: ACCOUNTS 스키마에서 계좌 입력 DOM을 동적 생성
   document.getElementById('baseDate').value = todayKST();
   renderInsurance();
