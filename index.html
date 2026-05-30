@@ -686,6 +686,7 @@ td.cv, td.ep { display: table-cell !important; vertical-align: middle; }
     <div style="display:flex;gap:8px;flex-wrap:wrap;">
       <button class="btn-p btn-sm" onclick="loadFromGAS()">☁️ GAS 로드</button>
       <button class="btn-p btn-sm" onclick="fetchPrices()">📡 시세 불러오기</button>
+      <button class="btn-p btn-sm" onclick="openAddHoldingModal()">➕ 종목 추가</button>
       <button class="btn-p" onclick="calcAll()">⚡ 전체 계산 및 동기화</button>
     </div>
   </div>
@@ -741,7 +742,7 @@ td.cv, td.ep { display: table-cell !important; vertical-align: middle; }
             <tr><td>청약통장</td><td data-label="금액(원)"><input type="number" id="chq" value="8660000"></td><td data-label="조건" style="font-size:10px;color:#888;">월 10만</td><td data-label="목적" style="font-size:10px;color:#888;">우대금리</td></tr>
             <tr><td>카카오(5%)</td><td data-label="금액(원)"><input type="number" id="emg1" value="300000"></td><td data-label="한도" style="font-size:10px;color:#888;">한도 30만</td><td data-label="목적" style="font-size:10px;color:#888;">비상금</td></tr>
             <tr><td>우리CMA(4%)</td><td data-label="금액(원)"><input type="number" id="emg2" value="2000000"></td><td data-label="한도" style="font-size:10px;color:#888;">한도 200만</td><td data-label="목적" style="font-size:10px;color:#888;">비상금</td></tr>
-            <tr><td>미래에셋(2.5%)</td><td data-label="금액(원)"><input type="number" id="emg3" value="1033763"></td><td data-label="한도" style="font-size:10px;color:#888;">한도 1,000만</td><td data-label="목적" style="font-size:10px;color:#888;">비상금</td></tr>
+            <tr><td>입출금통장</td><td data-label="금액(원)"><input type="number" id="emg3" value="1033763"></td><td data-label="한도" style="font-size:10px;color:#888;"></td><td data-label="목적" style="font-size:10px;color:#888;"></td></tr>
           </tbody>
         </table>
       </div>
@@ -1019,7 +1020,7 @@ td.cv, td.ep { display: table-cell !important; vertical-align: middle; }
         <tbody>
           <tr><td><span class="badge bi" style="font-size:11px;">ISA</span></td><td style="font-weight:800;color:var(--primary);">880,000원</td><td>나스닥 68만원 + S&P 20만원</td><td style="font-size:10px;color:#888;">한국투자증권</td></tr>
           <tr><td><span class="badge bp" style="font-size:11px;">연금/IRP</span></td><td style="font-weight:800;color:var(--primary);">200,000원</td><td>매월 25일</td><td style="font-size:10px;color:#888;">세액공제 혜택</td></tr>
-          <tr><td><span class="badge bd" style="font-size:11px;">DC</span></td><td style="font-weight:800;color:#10b981;">228,000원</td><td>S&P / AI / 조선 분할</td><td style="font-size:10px;color:#888;">회사 납입 (본인 부담 없음)</td></tr>
+          <tr><td><span class="badge bd" style="font-size:11px;">DC</span></td><td style="font-weight:800;color:#10b981;">228,000원</td><td>S&P / AI 분할</td><td style="font-size:10px;color:#888;">회사 납입 (본인 부담 없음)</td></tr>
           <tr><td><span class="badge bt" style="font-size:11px;">토스</span></td><td style="font-weight:800;color:var(--primary);">80,000원</td><td>우주항공 매월 1일 5주</td><td style="font-size:10px;color:#888;">토스증권</td></tr>
           <tr><td><span class="badge bs" style="font-size:11px;">청약/적금</span></td><td style="font-weight:800;color:var(--primary);">150,000원</td><td>우대금리 조건</td><td style="font-size:10px;color:#888;">청약 10만 + 적금 5만</td></tr>
           <tr class="total-row"><td><b>합계</b></td><td><b>1,538,000원</b></td><td colspan="2"><span style="font-size:10px;opacity:0.7;">본인 납입: 1,310,000원 / 회사 228,000원</span></td></tr>
@@ -1398,7 +1399,7 @@ const ALL_FIELDS = [
   'baseDate','usdRate',
   'q_isa_nq','a_isa_nq','c_isa_nq','q_isa_sp','a_isa_sp','c_isa_sp',
   'q_isa_cc','a_isa_cc','c_isa_cc','q_isa_mm','a_isa_mm','c_isa_mm','cash_isa',
-  'q_dc_sp','a_dc_sp','c_dc_sp','q_dc_ship','a_dc_ship','c_dc_ship',
+  'q_dc_sp','a_dc_sp','c_dc_sp',
   'q_dc_ai','a_dc_ai','c_dc_ai','c_dc_tdf','q_dc_mm','a_dc_mm','c_dc_mm','cash_dc',
   'q_irp_tech','a_irp_tech','c_irp_tech','q_irp_sp','a_irp_sp','c_irp_sp',
   'q_irp_div','a_irp_div','c_irp_div','cash_irp',
@@ -1428,7 +1429,6 @@ const PRICE_MAP_KRX = [
   { code:'360200', ids:['c_irp_sp'],           label:'ACE 미국S&P500'            },
   { code:'251600', ids:['c_irp_div'],          label:'PLUS 고배당주채권혼합'      },
   { code:'367380', ids:['c_pen_nq'],           label:'ACE 미국나스닥100'          },
-  { code:'494670', ids:['c_dc_ship'],          label:'TIGER 조선TOP10'                       },
   { code:'0142D0', ids:['c_dc_ai'],            label:'TIGER 미국AI데이터센터'         },
   { code:'0177N0', ids:['c_dc_mm'],            label:'KODEX 삼성전자SK하이닉스채권혼합50'     },  // ← c_dc_mm 재매핑
   { code:'0131V0', ids:['c_toss'],             label:'1Q 미국우주항공데크'                 },
@@ -1449,7 +1449,7 @@ const catItems = {
   '나스닥100':       'KODEX 미국나스닥100 (ISA) · ACE 미국나스닥100 (연금저축) · TIGER 미국테크TOP10 INDXX (IRP)',
   '반도체/AI/혁신':  'TIGER 미국AI데이터센터 (DC) · KODEX 삼성전자SK하이닉스채권혼합50 (DC) · 1Q 미국우주항공데크 (토스) · NVDA (토스) · SOXL (카카오페이)',
   '배당/인컴':       'KODEX 미국배당커버드콜액티브 (ISA) · PLUS 고배당주채권혼합 (IRP)',
-  '개별/테마':       'TIGER 조선TOP10 (DC) · 로켓랩 RKLB (카카오페이) · 나이키 NKE (카카오페이) · 테슬라 TSLA (카카오페이)',
+  '개별/테마':       '로켓랩 RKLB (카카오페이) · 나이키 NKE (카카오페이) · 테슬라 TSLA (카카오페이)',
   '안전자산(TDF)':   '삼성한국형TDF2045 (DC)',
   '안전자산(현금)':  '머니마켓액티브 (ISA) · 예수금 (전 계좌)',
   '실물/대안자산':   '금현물 보유분 (나무증권) — 매도 후 예수금은 안전자산(현금)으로 분류',
@@ -1521,9 +1521,6 @@ const ACCOUNTS = [
       {q:'q_dc_sp', a:'a_dc_sp', c:'c_dc_sp', defQ:262,defA:24817,
        name:'TIGER 미국S&P500',linkUrl:'https://finance.naver.com/item/main.naver?code=360750',
        cat:'S&P500',       ev:'ev_dc_sp', pc:'pc_dc_sp', mode:'split',usdExp:true},
-      {q:'q_dc_ship',a:'a_dc_ship',c:'c_dc_ship',defQ:35,defA:27950,
-       name:'TIGER 조선TOP10',linkUrl:'https://finance.naver.com/item/main.naver?code=494670',
-       cat:'개별/테마',ev:'ev_dc_ship',pc:'pc_dc_ship',mode:'split'},
       {q:'q_dc_ai', a:'a_dc_ai', c:'c_dc_ai', defQ:311,defA:9185,
        name:'TIGER 미국AI데이터센터',linkUrl:'https://finance.naver.com/item/main.naver?code=0142D0',
        cat:'반도체/AI/혁신',ev:'ev_dc_ai', pc:'pc_dc_ai', mode:'split'},
@@ -1601,6 +1598,131 @@ const ACCOUNTS = [
 ];
 
 // ═══════════════════════════════════════════════════════════════
+// 🆕 사용자 직접 추가 종목 (localStorage 영구 저장)
+// ───────────────────────────────────────────────────────────────
+// 데이터 구조: [{id, acctKey, name, qty, buyPrice, cat, market, code}]
+//   - market: 'KR' (네이버 종목코드) | 'US' (Yahoo 티커)
+//   - code  : KR이면 6자리/알파(예: 494670, 0142D0), US면 티커(예: TSLA)
+// 저장 시점: 추가/삭제 시 즉시 localStorage + GAS(saveToGAS)에 영속화
+// 주입 시점: renderInputCards() *직전*에 injectUserHoldings()로 ACCOUNTS·
+//            ALL_FIELDS·PRICE_MAP_KRX·PRICE_MAP_US에 합쳐짐
+// ═══════════════════════════════════════════════════════════════
+const USER_HOLDINGS_KEY = 'asset_mgmt_user_holdings_v1';
+
+function loadUserHoldings() {
+  try { return JSON.parse(localStorage.getItem(USER_HOLDINGS_KEY) || '[]'); }
+  catch(e) { return []; }
+}
+function saveUserHoldingsArr(arr) {
+  try { localStorage.setItem(USER_HOLDINGS_KEY, JSON.stringify(arr)); }
+  catch(e) { console.warn('사용자 종목 저장 실패:', e); }
+}
+function genUserHoldingId() {
+  return 'uh' + Date.now().toString(36) + Math.random().toString(36).slice(2,5);
+}
+
+// ACCOUNTS · ALL_FIELDS · PRICE_MAP_*에 사용자 종목을 동기화
+// (멱등: 이전 주입 흔적은 먼저 제거 후 다시 주입)
+function injectUserHoldings() {
+  // 1) 기존 주입 정리
+  ACCOUNTS.forEach(a => {
+    if (Array.isArray(a.holdings)) {
+      a.holdings = a.holdings.filter(h => !h._userAdded);
+    }
+  });
+  for (let i = ALL_FIELDS.length - 1; i >= 0; i--) {
+    const f = ALL_FIELDS[i];
+    if (/^(q|a|c)_uh/.test(f)) ALL_FIELDS.splice(i, 1);
+  }
+  for (let i = PRICE_MAP_US.length - 1; i >= 0; i--) {
+    if (PRICE_MAP_US[i]._userAdded) PRICE_MAP_US.splice(i, 1);
+  }
+  for (let i = PRICE_MAP_KRX.length - 1; i >= 0; i--) {
+    if (PRICE_MAP_KRX[i]._userAdded) PRICE_MAP_KRX.splice(i, 1);
+  }
+
+  // 2) 사용자 종목 주입
+  const list = loadUserHoldings();
+  list.forEach(uh => {
+    const acct = ACCOUNTS.find(a => a.key === uh.acctKey);
+    if (!acct) return;
+    if (acct.kakaopayDynamic) return;  // 카카오페이는 시트 동기화 — 사용자 추가 금지
+
+    const qId = 'q_' + uh.id;
+    const aId = 'a_' + uh.id;
+    const cId = 'c_' + uh.id;
+    const isUs = uh.market === 'US';
+    const linkUrl = isUs
+      ? `https://finance.yahoo.com/quote/${encodeURIComponent(uh.code)}`
+      : `https://finance.naver.com/item/main.naver?code=${encodeURIComponent(uh.code)}`;
+
+    const h = {
+      q: qId, a: aId, c: cId,
+      defQ: uh.qty, defA: uh.buyPrice,
+      name: uh.name,
+      linkUrl,
+      cat: uh.cat,
+      _userAdded: true,
+      _userHoldingId: uh.id,
+    };
+    if (isUs) { h.usd = true; h.usdExp = true; h.aStep = 0.01; h.cStep = 0.01; }
+
+    if (acct.layout === 'split') {
+      h.mode = 'split';
+      h.ev = 'ev_' + uh.id;
+      h.pc = 'pc_' + uh.id;
+    } else if (acct.layout === 'combined') {
+      h.mode = 'combined';
+      h.ep = 'ep_' + uh.id;
+    } else {
+      h.mode = 'split';
+      h.ev = 'ev_' + uh.id;
+      h.pc = 'pc_' + uh.id;
+    }
+    acct.holdings.push(h);
+
+    ALL_FIELDS.push(qId, aId, cId);
+
+    if (isUs) {
+      PRICE_MAP_US.push({
+        sym: uh.code.toUpperCase(),
+        ids: [cId],
+        label: uh.name,
+        _userAdded: true,
+      });
+    } else {
+      PRICE_MAP_KRX.push({
+        code: uh.code,
+        ids: [cId],
+        label: uh.name,
+        _userAdded: true,
+      });
+    }
+  });
+}
+
+// 사용자 종목 추가 → 저장 → 카드 재렌더 → 캐시 복원 → 계산
+function addUserHolding(uh) {
+  const list = loadUserHoldings();
+  list.push(uh);
+  saveUserHoldingsArr(list);
+  rebuildHoldings();
+}
+function removeUserHolding(id) {
+  const list = loadUserHoldings().filter(x => x.id !== id);
+  saveUserHoldingsArr(list);
+  rebuildHoldings();
+}
+function rebuildHoldings() {
+  // 현재 입력값 보존 → 재렌더 → 복원
+  if (typeof saveLocal === 'function') saveLocal();
+  injectUserHoldings();
+  renderInputCards();
+  if (typeof loadLocal === 'function') loadLocal();
+  if (typeof calcAll === 'function') calcAll();
+}
+
+// ═══════════════════════════════════════════════════════════════
 // 입력 카드 동적 렌더링 — ACCOUNTS 스키마 하나로 8개 계좌 테이블 생성
 // (기존 ~200줄의 하드코딩 HTML을 이 함수 ~60줄로 대체)
 // ═══════════════════════════════════════════════════════════════
@@ -1621,9 +1743,15 @@ function renderInputCards() {
   };
 
   // ─── 종목명 셀 (링크 or 플레인) ───
-  const nameCell = h => h.linkUrl
-    ? `<a href="${h.linkUrl}" target="_blank" class="nlink">${h.name} ↗</a>`
-    : h.name;
+  const nameCell = h => {
+    const link = h.linkUrl
+      ? `<a href="${h.linkUrl}" target="_blank" class="nlink">${h.name} ↗</a>`
+      : h.name;
+    const delBtn = h._userAdded
+      ? ` <button onclick="if(confirm('${(h.name||'').replace(/'/g,'\\\'')} 삭제할까요?'))removeUserHolding('${h._userHoldingId}')" title="종목 삭제" style="border:none;background:#fee2e2;color:#b91c1c;border-radius:6px;font-size:10px;font-weight:700;padding:1px 5px;margin-left:4px;cursor:pointer;">×</button>`
+      : '';
+    return link + delBtn;
+  };
 
   // ─── 공통 input 속성 빌더 ───
   // 🆕 v2.3: readonly 옵션 추가 (카카오페이 시트 동기 종목용)
@@ -2010,7 +2138,12 @@ async function fetchPrices() {
   }
 
   try {
-    const url = `${GAS_URL}?action=price&token=${encodeURIComponent(GAS_TOKEN)}`;
+    // 🆕 사용자 추가 종목 코드를 GAS에 함께 전달 (백엔드가 동적으로 시세 조회)
+    const extraUs = PRICE_MAP_US.filter(m => m._userAdded).map(m => m.sym).join(',');
+    const extraKr = PRICE_MAP_KRX.filter(m => m._userAdded).map(m => m.code).join(',');
+    let url = `${GAS_URL}?action=price&token=${encodeURIComponent(GAS_TOKEN)}`;
+    if (extraUs) url += `&extra_us=${encodeURIComponent(extraUs)}`;
+    if (extraKr) url += `&extra_kr=${encodeURIComponent(extraKr)}`;
     const res = await fetchWithTimeout(url);
     if (!res.ok) throw new Error('서버 통신 실패 (HTTP ' + res.status + ')');
     const data = await res.json();
@@ -3339,7 +3472,7 @@ function buildHistDetail(snap) {
       <tr><td>청약통장</td><td class="hd-td-r hd-bold">${fmt(parseFloat(f.chq)||0)}원</td><td class="hd-dim-xs">월 10만 / 우대금리</td></tr>
       <tr><td>카카오(5%)</td><td class="hd-td-r hd-bold">${fmt(parseFloat(f.emg1)||0)}원</td><td class="hd-dim-xs">비상금</td></tr>
       <tr><td>우리CMA(4%)</td><td class="hd-td-r hd-bold">${fmt(parseFloat(f.emg2)||0)}원</td><td class="hd-dim-xs">비상금</td></tr>
-      <tr><td>미래에셋(2.5%)</td><td class="hd-td-r hd-bold">${fmt(parseFloat(f.emg3)||0)}원</td><td class="hd-dim-xs">비상금</td></tr>
+      <tr><td>입출금통장</td><td class="hd-td-r hd-bold">${fmt(parseFloat(f.emg3)||0)}원</td><td class="hd-dim-xs"></td></tr>
       </tbody></table></div></div>`;
   }
 
@@ -3804,11 +3937,101 @@ function cancelRoadmapEdit() {
   renderRoadmap();
 }
 
+// ═══════════════════════════════════════════════════════════════
+// 🆕 종목 추가 모달 — 계좌/종목명/수량/매입단가/자산군/시장/코드 입력
+// ═══════════════════════════════════════════════════════════════
+function openAddHoldingModal() {
+  // 사용 가능 계좌: 카카오페이(시트 동기) · 금현물 제외
+  const acctOptions = ACCOUNTS
+    .filter(a => !a.kakaopayDynamic && a.layout !== 'gold')
+    .map(a => `<option value="${a.key}">${a.key}</option>`).join('');
+  const catOptions = Object.keys(catDef)
+    .map(c => `<option value="${c}">${c}</option>`).join('');
+
+  const html = `
+    <div id="addHoldingBackdrop" onclick="if(event.target===this)closeAddHoldingModal()"
+      style="position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;">
+      <div style="background:#fff;border-radius:14px;padding:20px;max-width:440px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3);">
+        <div style="font-size:16px;font-weight:800;color:#0f172a;margin-bottom:14px;">➕ 종목 직접 추가</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:12px;">
+          <label style="grid-column:1/3;">계좌
+            <select id="ahf_acct" style="width:100%;padding:6px;border:1px solid #cbd5e1;border-radius:6px;margin-top:3px;">${acctOptions}</select>
+          </label>
+          <label style="grid-column:1/3;">종목명
+            <input id="ahf_name" type="text" placeholder="예: TIGER 조선TOP10" style="width:100%;padding:6px;border:1px solid #cbd5e1;border-radius:6px;margin-top:3px;">
+          </label>
+          <label>수량
+            <input id="ahf_qty" type="number" step="any" placeholder="예: 35" style="width:100%;padding:6px;border:1px solid #cbd5e1;border-radius:6px;margin-top:3px;">
+          </label>
+          <label>매입단가
+            <input id="ahf_buy" type="number" step="any" placeholder="원/$ 단가" style="width:100%;padding:6px;border:1px solid #cbd5e1;border-radius:6px;margin-top:3px;">
+          </label>
+          <label style="grid-column:1/3;">자산군
+            <select id="ahf_cat" style="width:100%;padding:6px;border:1px solid #cbd5e1;border-radius:6px;margin-top:3px;">${catOptions}</select>
+          </label>
+          <label>시장
+            <select id="ahf_market" style="width:100%;padding:6px;border:1px solid #cbd5e1;border-radius:6px;margin-top:3px;">
+              <option value="KR">KR (네이버 종목코드)</option>
+              <option value="US">US (Yahoo 티커)</option>
+            </select>
+          </label>
+          <label>티커/종목코드
+            <input id="ahf_code" type="text" placeholder="494670 또는 TSLA" style="width:100%;padding:6px;border:1px solid #cbd5e1;border-radius:6px;margin-top:3px;">
+          </label>
+        </div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;">
+          <button onclick="closeAddHoldingModal()" style="padding:7px 14px;border:1px solid #cbd5e1;background:#fff;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;">취소</button>
+          <button onclick="submitAddHolding()" style="padding:7px 14px;border:none;background:#10b981;color:#fff;border-radius:8px;cursor:pointer;font-size:12px;font-weight:700;">추가</button>
+        </div>
+        <div style="margin-top:10px;font-size:10px;color:#64748b;line-height:1.5;">
+          💡 추가 후 <b>📡 시세 불러오기</b> 누르면 현재가 자동 반영됩니다.<br>
+          💡 KR 종목: 네이버금융 종목코드(494670, 0142D0 등) | US 종목: Yahoo 티커(TSLA, AAPL 등)
+        </div>
+      </div>
+    </div>`;
+  const wrap = document.createElement('div');
+  wrap.innerHTML = html;
+  document.body.appendChild(wrap.firstElementChild);
+}
+function closeAddHoldingModal() {
+  const el = document.getElementById('addHoldingBackdrop');
+  if (el) el.remove();
+}
+function submitAddHolding() {
+  const acctKey = document.getElementById('ahf_acct').value;
+  const name    = document.getElementById('ahf_name').value.trim();
+  const qty     = parseFloat(document.getElementById('ahf_qty').value);
+  const buy     = parseFloat(document.getElementById('ahf_buy').value);
+  const cat     = document.getElementById('ahf_cat').value;
+  const market  = document.getElementById('ahf_market').value;
+  const code    = document.getElementById('ahf_code').value.trim();
+
+  if (!name)      return alert('종목명을 입력하세요.');
+  if (!Number.isFinite(qty))   return alert('수량을 숫자로 입력하세요.');
+  if (!Number.isFinite(buy))   return alert('매입단가를 숫자로 입력하세요.');
+  if (!code)      return alert('티커/종목코드를 입력하세요.');
+
+  addUserHolding({
+    id: genUserHoldingId(),
+    acctKey, name,
+    qty, buyPrice: buy,
+    cat, market, code,
+  });
+  closeAddHoldingModal();
+  // 추가 직후 시세 자동 조회 시도
+  if (typeof fetchPrices === 'function') {
+    setTimeout(() => fetchPrices(), 200);
+  }
+}
+
 window.onload = async () => {
   // 🆕 v2.3: 카카오페이 시트 데이터를 먼저 로드 → ACCOUNTS.kakaopay.holdings 채움
   //   - 네트워크 지연 시 빈 카드로 폴백 (loadKakaopayFromSheet 내부에서 처리)
   //   - 반드시 renderInputCards() *이전*에 await 되어야 동적 종목 카드가 생성됨
   await loadKakaopayFromSheet();
+
+  // 🆕 사용자 추가 종목을 ACCOUNTS·ALL_FIELDS·PRICE_MAP_*에 주입 (반드시 renderInputCards 이전)
+  injectUserHoldings();
 
   renderInputCards();  // ⚠ 반드시 최우선: ACCOUNTS 스키마에서 계좌 입력 DOM을 동적 생성
   document.getElementById('baseDate').value = todayKST();
