@@ -673,6 +673,8 @@ td.cv, td.ep { display: table-cell !important; vertical-align: middle; }
   .wrap { padding: 0.8rem 1rem; }
   .page-header { flex-direction: row; }
 }
+/* 보험 만기/갱신 임박 배지 */
+.ins-exp-badge { display:inline-block; font-size:9px; font-weight:800; padding:2px 8px; border-radius:99px; margin-left:6px; white-space:nowrap; vertical-align:middle; }
 </style>
 </head>
 <body>
@@ -1193,6 +1195,12 @@ td.cv, td.ep { display: table-cell !important; vertical-align: middle; }
       </div>
     </div>
 
+    <!-- 📈 순자산 추이 그래프 -->
+    <div class="card">
+      <div class="ct">📈 순자산 추이 <span style="font-size:10px;font-weight:400;color:#94a3b8;">— 저장된 스냅샷 기반 · 목표 3억원</span></div>
+      <div id="networth_trend"></div>
+    </div>
+
     <!-- 모바일 카드 뷰 (기본, xs에서만 노출) -->
     <div id="histCards" class="hist-mobile-cards"></div>
 
@@ -1398,7 +1406,7 @@ const INCOME_MONTHLY = [
 const ALL_FIELDS = [
   'baseDate','usdRate',
   'q_isa_nq','a_isa_nq','c_isa_nq','q_isa_sp','a_isa_sp','c_isa_sp',
-  'q_isa_cc','a_isa_cc','c_isa_cc','q_isa_mm','a_isa_mm','c_isa_mm','cash_isa',
+  'q_isa_cc','a_isa_cc','c_isa_cc','cash_isa',
   'q_dc_sp','a_dc_sp','c_dc_sp',
   'q_dc_ai','a_dc_ai','c_dc_ai','c_dc_tdf','q_dc_mm','a_dc_mm','c_dc_mm','cash_dc',
   'q_irp_tech','a_irp_tech','c_irp_tech','q_irp_sp','a_irp_sp','c_irp_sp',
@@ -1424,7 +1432,6 @@ const PRICE_MAP_KRX = [
   { code:'379810', ids:['c_isa_nq'],           label:'KODEX 미국나스닥100'       },
   { code:'360750', ids:['c_isa_sp','c_dc_sp'], label:'TIGER 미국S&P500'          },
   { code:'441640', ids:['c_isa_cc'],           label:'KODEX 미국배당커버드콜액티브'},
-  { code:'488770', ids:['c_isa_mm'],           label:'KODEX 머니마켓액티브'       },
   { code:'381170', ids:['c_irp_tech'],         label:'TIGER 미국테크TOP10 INDXX'  },
   { code:'360200', ids:['c_irp_sp'],           label:'ACE 미국S&P500'            },
   { code:'251600', ids:['c_irp_div'],          label:'PLUS 고배당주채권혼합'      },
@@ -1451,7 +1458,7 @@ const catItems = {
   '배당/인컴':       'KODEX 미국배당커버드콜액티브 (ISA) · PLUS 고배당주채권혼합 (IRP)',
   '개별/테마':       '로켓랩 RKLB (카카오페이) · 나이키 NKE (카카오페이) · 테슬라 TSLA (카카오페이)',
   '안전자산(TDF)':   '삼성한국형TDF2045 (DC)',
-  '안전자산(현금)':  '머니마켓액티브 (ISA) · 예수금 (전 계좌)',
+  '안전자산(현금)':  '예수금 (전 계좌)',
   '실물/대안자산':   '금현물 보유분 (나무증권) — 매도 후 예수금은 안전자산(현금)으로 분류',
 };
 
@@ -1507,9 +1514,6 @@ const ACCOUNTS = [
       {q:'q_isa_cc',a:'a_isa_cc',c:'c_isa_cc',defQ:237,defA:11705,
        name:'KODEX 미국배당커버드콜액티브',linkUrl:'https://finance.naver.com/item/main.naver?code=441640',
        cat:'배당/인컴',  ev:'ev_isa_cc',pc:'pc_isa_cc',mode:'split',usdExp:true},
-      {q:'q_isa_mm',a:'a_isa_mm',c:'c_isa_mm',defQ:43, defA:103557,
-       name:'KODEX 머니마켓액티브',linkUrl:'https://finance.naver.com/item/main.naver?code=488770',
-       cat:'안전자산(현금)',ev:'ev_isa_mm',pc:'pc_isa_mm',mode:'split',skipCatCost:true},
     ],
     cash:{id:'cash_isa',def:22498,usd:false,cat:'안전자산(현금)',label:'예수금(원)'},
   },
@@ -3010,6 +3014,17 @@ function renderInsurance() {
     const nameStyle = isPaid?'color:#15803d;font-weight:800;':'font-weight:700;';
     const paidMark  = isPaid?' ✅':'';
 
+    // 만기/갱신 임박 배지 (납입중 항목만 — 완납은 평생보장이라 제외)
+    let expiryBadge = '';
+    if (!isPaid) {
+      const dDays = Math.ceil(diffMs / 86400000);
+      if (dDays < 0) {
+        expiryBadge = `<span class="ins-exp-badge" style="background:#fee2e2;color:#991b1b;">⚠️ 만기경과</span>`;
+      } else if (dDays <= 365) {
+        expiryBadge = `<span class="ins-exp-badge" style="background:#ffedd5;color:#c2410c;">🔔 갱신임박 D-${dDays}</span>`;
+      }
+    }
+
     // 상세 보장 행
     const detailHtml = ins.details.map(([k,v])=>
       `<div class="di"><span class="di-key">▪ ${k}</span><span class="di-val">${v}</span></div>`
@@ -3020,7 +3035,7 @@ function renderInsurance() {
         <td>
           <button class="ins-name-btn" onclick="toggleIns(${idx})" style="${nameStyle}">
             ${ins.name}${paidMark} <span style="font-size:9px;color:#94a3b8;">▼ 상세</span>
-          </button>
+          </button>${expiryBadge}
         </td>
         <td>${ins.price>0?fmt(ins.price)+'원':'<span style="color:#10b981;font-weight:700;">완납(무료)</span>'}</td>
         <td><span class="badge ${badge}">${ins.status}</span></td>
@@ -3493,6 +3508,7 @@ function renderHistory() {
   const history = loadHistory();
   const tbody   = document.getElementById('histBody');
   const cards   = document.getElementById('histCards');
+  drawNetWorthTrend();   // 📈 순자산 추이 그래프 (스냅샷 0~1개도 안내 처리)
   if (!tbody) return;
 
   if (history.length === 0) {
@@ -3567,6 +3583,124 @@ function renderHistory() {
       </div>`;
     }).join('');
   }
+}
+
+// ─── 📈 순자산 추이 SVG 라인차트 (라이브러리 없음, 바닐라 JS) ───
+// 저장된 스냅샷의 total(순자산)을 날짜 오름차순으로 잇고, 3억 목표선 표시
+function drawNetWorthTrend() {
+  const host = document.getElementById('networth_trend');
+  if (!host) return;
+
+  // 날짜 오름차순 정렬 (history는 최신이 앞 → 뒤집어 시간순으로)
+  const hist = loadHistory()
+    .slice()
+    .filter(h => h && h.date && Number.isFinite(+h.total))
+    .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+  // 스냅샷 1개 이하: 안내문구
+  if (hist.length < 2) {
+    host.innerHTML = `<div style="text-align:center;color:#94a3b8;padding:26px 0;font-size:12px;line-height:1.7;">
+      📈 스냅샷이 <b>2개 이상</b> 쌓이면 자산 추이 그래프가 표시됩니다.<br>
+      <span style="font-size:11px;">현재 저장된 스냅샷: ${hist.length}개 — ⚡ 전체 계산 후 "💾 스냅샷 저장"을 눌러 기록을 시작하세요.</span>
+    </div>`;
+    return;
+  }
+
+  // ── 좌표계 ──
+  const GOAL = 300000000;               // 3억 목표
+  const W = 720, H = 300;               // viewBox (반응형, width:100%)
+  const padL = 56, padR = 20, padT = 24, padB = 40;
+  const plotW = W - padL - padR;
+  const plotH = H - padT - padB;
+
+  const totals = hist.map(h => +h.total);
+  const maxTotal = Math.max(...totals);
+  // y축 상단: 목표(3억)와 실제 최댓값 중 큰 값 기준 (목표선이 항상 보이도록)
+  const yMax = Math.max(GOAL, maxTotal) * 1.08;
+  const yMin = 0;
+
+  const x = i => padL + (hist.length === 1 ? plotW / 2 : (plotW * i) / (hist.length - 1));
+  const y = v => padT + plotH - ((v - yMin) / (yMax - yMin)) * plotH;
+
+  // ── 축약 표기 (억/만) ──
+  const shortAmt = n => {
+    if (n >= 100000000) return (n / 100000000).toFixed(n >= 1000000000 ? 1 : 2) + '억';
+    if (n >= 10000)     return Math.round(n / 10000).toLocaleString() + '만';
+    return Math.round(n).toLocaleString();
+  };
+
+  // ── y축 그리드 (4등분) ──
+  let grid = '';
+  for (let i = 0; i <= 4; i++) {
+    const val = yMin + ((yMax - yMin) * i) / 4;
+    const gy = y(val);
+    grid += `<line x1="${padL}" y1="${gy.toFixed(1)}" x2="${W - padR}" y2="${gy.toFixed(1)}" stroke="#eef2f7" stroke-width="1"/>
+      <text x="${padL - 8}" y="${(gy + 3).toFixed(1)}" text-anchor="end" font-size="9" fill="#94a3b8">${shortAmt(val)}</text>`;
+  }
+
+  // ── 목표선 (3억, 점선) ──
+  const goalY = y(GOAL);
+  const goalLine = (GOAL <= yMax)
+    ? `<line x1="${padL}" y1="${goalY.toFixed(1)}" x2="${W - padR}" y2="${goalY.toFixed(1)}" stroke="#10b981" stroke-width="1.5" stroke-dasharray="5 4"/>
+       <text x="${W - padR}" y="${(goalY - 5).toFixed(1)}" text-anchor="end" font-size="9.5" fill="#059669" font-weight="700">목표 3억</text>`
+    : '';
+
+  // ── 라인 + 영역 패스 ──
+  const pts = hist.map((h, i) => [x(i), y(+h.total)]);
+  const linePath = pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join(' ');
+  const areaPath = `${linePath} L ${pts[pts.length - 1][0].toFixed(1)} ${(padT + plotH).toFixed(1)} L ${pts[0][0].toFixed(1)} ${(padT + plotH).toFixed(1)} Z`;
+
+  // ── 데이터 점 + hover 툴팁(title) ──
+  const dots = hist.map((h, i) => {
+    const px = x(i), py = y(+h.total);
+    const isLast = i === hist.length - 1;
+    return `<circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="${isLast ? 4.5 : 3}" fill="${isLast ? '#1D4ED8' : '#fff'}" stroke="#1D4ED8" stroke-width="2">
+        <title>${h.date} · ${fmt(+h.total)}원 (달성률 ${(h.total / GOAL * 100).toFixed(1)}%)</title>
+      </circle>`;
+  }).join('');
+
+  // ── 마지막 값 라벨 ──
+  const lastIdx = hist.length - 1;
+  const lx = x(lastIdx), ly = y(totals[lastIdx]);
+  const labelAbove = ly > padT + 24;
+  const lastLabel = `<text x="${lx.toFixed(1)}" y="${(labelAbove ? ly - 12 : ly + 18).toFixed(1)}" text-anchor="${lastIdx === 0 ? 'start' : 'end'}" font-size="12" fill="#1D4ED8" font-weight="800">${shortAmt(totals[lastIdx])}원</text>`;
+
+  // ── x축 날짜 라벨 (최대 6개로 솎아내기) ──
+  const step = Math.max(1, Math.ceil(hist.length / 6));
+  let xLabels = '';
+  hist.forEach((h, i) => {
+    if (i % step !== 0 && i !== lastIdx) return;
+    const md = h.date.slice(5).replace('-', '.');   // MM.DD
+    xLabels += `<text x="${x(i).toFixed(1)}" y="${(H - padB + 16).toFixed(1)}" text-anchor="middle" font-size="9" fill="#94a3b8">${md}</text>`;
+  });
+
+  // ── 기간 요약 (증감) ──
+  const first = totals[0], last = totals[lastIdx];
+  const diff = last - first;
+  const diffPct = first > 0 ? (diff / first * 100) : 0;
+  const diffColor = diff >= 0 ? '#10b981' : '#ef4444';
+  const summary = `<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-top:10px;font-size:11px;">
+      <span style="color:#64748b;">기록 기간: <b style="color:#334155;">${hist[0].date} ~ ${hist[lastIdx].date}</b> (${hist.length}개)</span>
+      <span style="color:#64748b;">기간 증감: <b style="color:${diffColor};">${diff >= 0 ? '+' : ''}${fmt(diff)}원 (${diff >= 0 ? '+' : ''}${diffPct.toFixed(1)}%)</b></span>
+    </div>`;
+
+  host.innerHTML = `
+    <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block;" preserveAspectRatio="xMidYMid meet">
+      <defs>
+        <linearGradient id="nwArea" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#1D4ED8" stop-opacity="0.18"/>
+          <stop offset="100%" stop-color="#1D4ED8" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      ${grid}
+      ${goalLine}
+      <path d="${areaPath}" fill="url(#nwArea)"/>
+      <path d="${linePath}" fill="none" stroke="#1D4ED8" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+      ${dots}
+      ${lastLabel}
+      ${xLabels}
+    </svg>
+    ${summary}`;
 }
 
 function toggleMobileCard(idx) {
@@ -3942,6 +4076,7 @@ function cancelRoadmapEdit() {
 // ═══════════════════════════════════════════════════════════════
 function openAddHoldingModal() {
   // 사용 가능 계좌: 카카오페이(시트 동기) · 금현물 제외
+  // 사용 가능 계좌: 카카오페이(시트 동기) · 금현물 제외
   const acctOptions = ACCOUNTS
     .filter(a => !a.kakaopayDynamic && a.layout !== 'gold')
     .map(a => `<option value="${a.key}">${a.key}</option>`).join('');
@@ -3963,14 +4098,14 @@ function openAddHoldingModal() {
           <label>수량
             <input id="ahf_qty" type="number" step="any" placeholder="예: 35" style="width:100%;padding:6px;border:1px solid #cbd5e1;border-radius:6px;margin-top:3px;">
           </label>
-          <label>매입단가
-            <input id="ahf_buy" type="number" step="any" placeholder="원/$ 단가" style="width:100%;padding:6px;border:1px solid #cbd5e1;border-radius:6px;margin-top:3px;">
+          <label>매입단가 <span id="ahf_cur_label" style="color:#10b981;font-weight:800;font-size:11px;"></span>
+            <input id="ahf_buy" type="number" step="any" placeholder="단가" style="width:100%;padding:6px;border:1px solid #cbd5e1;border-radius:6px;margin-top:3px;">
           </label>
           <label style="grid-column:1/3;">자산군
             <select id="ahf_cat" style="width:100%;padding:6px;border:1px solid #cbd5e1;border-radius:6px;margin-top:3px;">${catOptions}</select>
           </label>
           <label>시장
-            <select id="ahf_market" style="width:100%;padding:6px;border:1px solid #cbd5e1;border-radius:6px;margin-top:3px;">
+            <select id="ahf_market" onchange="ahfUpdateCurrencyHint()" style="width:100%;padding:6px;border:1px solid #cbd5e1;border-radius:6px;margin-top:3px;">
               <option value="KR">KR (네이버 종목코드)</option>
               <option value="US">US (Yahoo 티커)</option>
             </select>
@@ -3992,6 +4127,18 @@ function openAddHoldingModal() {
   const wrap = document.createElement('div');
   wrap.innerHTML = html;
   document.body.appendChild(wrap.firstElementChild);
+  ahfUpdateCurrencyHint();   // 초기 통화 표시 설정
+}
+// 선택한 시장(KR/US)에 따라 매입단가 통화(원/$) 라벨·placeholder 자동 표시
+function ahfUpdateCurrencyHint() {
+  const marketSel = document.getElementById('ahf_market');
+  const curLbl    = document.getElementById('ahf_cur_label');
+  const buyEl     = document.getElementById('ahf_buy');
+  if (!marketSel) return;
+
+  const isUsd = marketSel.value === 'US';
+  if (curLbl) curLbl.textContent = isUsd ? '· 달러($)' : '· 원화(원)';
+  if (buyEl)  buyEl.placeholder  = isUsd ? '$ 단가 (예: 12.34)' : '원 단가 (예: 24500)';
 }
 function closeAddHoldingModal() {
   const el = document.getElementById('addHoldingBackdrop');
