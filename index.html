@@ -97,6 +97,15 @@ td.cv, td.ep { display: table-cell !important; vertical-align: middle; }
 .hist-pos { color:#10b981; font-weight:700; }
 .hist-neg { color:#ef4444; font-weight:700; }
 
+/* ── 시세 갱신 현황 패널 ── */
+.price-status { margin-top:6px; font-size:11px; border-radius:8px; padding:6px 10px; line-height:1.55; display:inline-block; max-width:100%; }
+.price-status.ok   { background:#f0fdf4; border:1px solid #bbf7d0; color:#166534; }
+.price-status.warn { background:#fffbeb; border:1px solid #fde68a; color:#b45309; }
+.price-status.err  { background:#fef2f2; border:1px solid #fecaca; color:#b91c1c; }
+.price-status b { font-weight:800; }
+/* 갱신 실패한 현재가 입력칸 표시 */
+input.price-stale { border:1.5px solid #f59e0b !important; background:#fffbeb !important; }
+
 /* ── 로드맵 편집 모드 ── */
 .tl-edit-wrap { background:#fff; border:1.5px solid #a7f3d0; border-radius:12px; padding:12px 14px; margin-bottom:14px; }
 .tl-edit-label { font-size:10px; color:#64748b; font-weight:700; margin-bottom:3px; text-transform:uppercase; letter-spacing:0.3px; }
@@ -684,6 +693,7 @@ td.cv, td.ep { display: table-cell !important; vertical-align: middle; }
     <div>
       <h1>Next Chapter: 2030</h1>
       <div id="syncStatus" style="font-size:11px;color:#94a3b8;margin-top:4px;">📦 로컬 데이터 로드 중...</div>
+      <div id="priceStatusPanel" class="price-status" style="display:none;"></div>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;">
       <button class="btn-p btn-sm" onclick="loadFromGAS()">☁️ GAS 로드</button>
@@ -944,9 +954,6 @@ td.cv, td.ep { display: table-cell !important; vertical-align: middle; }
     </div>
   </div>
 
-  <!-- tab-weight: 내용을 tab-summary로 통합 (JS 참조 유지용 빈 div) -->
-  <div id="tab-weight" class="sec" style="display:none!important;"></div>
-
   <!-- ══ 탭 3: 보장 자산(보험) ══ -->
   <div id="tab-insurance" class="sec">
     <div class="mgrid" style="grid-template-columns:1fr 1fr;">
@@ -1031,8 +1038,6 @@ td.cv, td.ep { display: table-cell !important; vertical-align: middle; }
     </div>
 
   <!-- ── 전략 & 절세 (tab-plan에 통합) ── -->
-  <!-- tab-strategy: 내용을 tab-plan으로 통합 (JS 참조 유지용 빈 div) -->
-  <div id="tab-strategy" class="sec" style="display:none!important;"></div>
   <!-- 아래부터 전략 & 절세 원래 내용 -->
   <div style="border-top:2px dashed #DBEAFE;margin:20px 0 16px;padding-top:16px;">
     <div style="font-size:13px;font-weight:800;color:var(--primary);margin-bottom:16px;">💡 전략 &amp; 절세</div>
@@ -1223,9 +1228,6 @@ td.cv, td.ep { display: table-cell !important; vertical-align: middle; }
       <button class="btn-p" style="width:100%;margin-top:10px;" onclick="copyText()">📋 클립보드에 복사하기</button>
     </div>
   </div>
-
-  <!-- tab-export: 내용을 tab-history로 통합 (JS 참조 유지용 빈 div) -->
-  <div id="tab-export" class="sec" style="display:none!important;"></div>
 
   <!-- ══ 탭 8: 퇴직연금 시뮬레이션 ══ -->
   <div id="tab-retirement" class="sec">
@@ -1975,6 +1977,69 @@ function setSyncStatus(msg) {
 }
 
 // ════════════════════════════════════════════════════════════════════
+//  시세 갱신 현황 표시 (마지막 갱신 시각 + 실패 종목 명시)
+// ════════════════════════════════════════════════════════════════════
+const PRICE_STATUS_KEY = 'price_status_v1';
+
+// 실패한 현재가 입력칸에 노란 테두리(stale) 표시 / 해제
+function markStaleInputs(ids, isStale) {
+  (ids || []).forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (isStale) {
+      el.classList.add('price-stale');
+      el.title = '⚠️ 마지막 갱신 실패 — 이전 값이 표시 중입니다';
+    } else {
+      el.classList.remove('price-stale');
+      if (el.title && el.title.indexOf('마지막 갱신 실패') > -1) el.title = '';
+    }
+  });
+}
+
+// 현황 패널 렌더링. state = { time, failed:[], okCount, error }
+function renderPriceStatus(state) {
+  const el = document.getElementById('priceStatusPanel');
+  if (!el) return;
+  el.style.display = '';
+  el.classList.remove('ok', 'warn', 'err');
+
+  if (state.error) {
+    el.classList.add('err');
+    const last = state.time ? ` · 마지막 정상 갱신 <b>${state.time}</b>` : '';
+    el.innerHTML = `❌ 시세 갱신 실패: ${state.error}${last}`;
+    return;
+  }
+
+  const failed = state.failed || [];
+  const timeStr = state.time ? `마지막 갱신 <b>${state.time}</b>` : '갱신 기록 없음';
+  if (failed.length === 0) {
+    el.classList.add('ok');
+    el.innerHTML = `✅ ${timeStr} · 전체 종목 정상 (${state.okCount || 0}건)`;
+  } else {
+    el.classList.add('warn');
+    el.innerHTML = `⚠️ ${timeStr} · 정상 ${state.okCount || 0}건 · ` +
+      `<b>갱신 실패 ${failed.length}건</b>: ${failed.join(', ')}` +
+      `<br><span style="font-size:10px;opacity:0.85;">↑ 실패 종목은 이전 값이 표시 중 (입력칸 노란 테두리)</span>`;
+  }
+}
+
+function savePriceStatus(state) {
+  try { localStorage.setItem(PRICE_STATUS_KEY, JSON.stringify(state)); } catch(e) {}
+}
+
+// 최초 로딩 시 직전 갱신 현황 복원
+function restorePriceStatus() {
+  let state = null;
+  try {
+    const s = localStorage.getItem(PRICE_STATUS_KEY);
+    if (s) state = JSON.parse(s);
+  } catch(e) {}
+  if (!state) return;
+  renderPriceStatus(state);
+  if (state.failedIds && state.failedIds.length) markStaleInputs(state.failedIds, true);
+}
+
+// ════════════════════════════════════════════════════════════════════
 // 🆕 v2.3 — 카카오페이 시트 데이터 로드 (단방향: 시트 → 대시보드)
 //
 // 흐름:
@@ -2157,15 +2222,17 @@ async function fetchPrices() {
       return;
     }
 
-    let fetched = [], failed = [];
+    let fetched = [], failed = [], failedIds = [], okIds = [];
 
     // 1) 환율 — null 이면 기존 값 유지 (덮어쓰지 않음)
     if (data.rate) {
       const el = document.getElementById('usdRate');
       if (el) el.value = data.rate;
       fetched.push('환율 ' + fmt(data.rate) + '원');
+      okIds.push('usdRate');
     } else {
-      failed.push('환율(이전값 유지)');
+      failed.push('환율');
+      failedIds.push('usdRate');
     }
 
     // 2) 미국 주식 & 금
@@ -2177,21 +2244,25 @@ async function fetchPrices() {
    PRICE_MAP_US.forEach(item => {
           const price = data.us?.[item.sym];
       if (price == null || !Number.isFinite(price) || price <= 0) {
-             failed.push(item.label); return;
+             failed.push(item.label);
+             failedIds.push(...(item.isGold ? ['c_gold'] : item.ids));
+             return;
          }
 
       if (item.isGold) {
-        if (!usdRateNow) { failed.push('금(환율없음)'); return; }
+        if (!usdRateNow) { failed.push('금(환율없음)'); failedIds.push('c_gold'); return; }
         const krwG = Math.round(price / 31.1035 * usdRateNow);
         const el = document.getElementById('c_gold');
         if (el) el.value = krwG;
         fetched.push('금 ' + fmt(krwG) + '원/g');
+        okIds.push('c_gold');
       } else {
         item.ids.forEach(id => {
           const el = document.getElementById(id);
           if (el) el.value = parseFloat(price.toFixed(2));
         });
         fetched.push(item.label);
+        okIds.push(...item.ids);
       }
     });
 
@@ -2204,8 +2275,10 @@ async function fetchPrices() {
           if (el) el.value = price;
         });
         fetched.push(item.label);
+        okIds.push(...item.ids);
       } else {
         failed.push(item.label);
+        failedIds.push(...item.ids);
       }
     });
 
@@ -2220,15 +2293,25 @@ async function fetchPrices() {
     const stampEl = document.getElementById('priceStamp');
     if (stampEl) stampEl.textContent = '기준: ' + time;
 
+    // ── 시세 갱신 현황 패널: 실패 종목 명시 + 입력칸 stale 표시 ──
+    markStaleInputs(okIds, false);     // 성공 종목 노란 표시 해제
+    markStaleInputs(failedIds, true);  // 실패 종목 노란 테두리
+    const statusState = { time, failed, okCount: fetched.length, failedIds };
+    renderPriceStatus(statusState);
+    savePriceStatus(statusState);
+
     // 시세 포함 전체 입력값을 로컬 캐시에 저장
     if (fetched.length > 0 && typeof saveLocal === 'function') saveLocal();
 
   } catch(e) {
-    if (e.name === 'AbortError') {
-      setSyncStatus('⏱️ 시세 조회 실패: 서버 응답 지연 (15초 초과)');
-    } else {
-      setSyncStatus('⚠️ 시세 서버 통신 오류: ' + e.message);
-    }
+    const prev = (() => { try { return JSON.parse(localStorage.getItem(PRICE_STATUS_KEY)) || {}; } catch(_) { return {}; } })();
+    const errMsg = e.name === 'AbortError'
+      ? '서버 응답 지연 (15초 초과 타임아웃)'
+      : '서버 통신 오류 (' + e.message + ')';
+    setSyncStatus(e.name === 'AbortError'
+      ? '⏱️ 시세 조회 실패: 서버 응답 지연 (15초 초과)'
+      : '⚠️ 시세 서버 통신 오류: ' + e.message);
+    renderPriceStatus({ error: errMsg, time: prev.time || window.__lastPriceSyncAt || null });
   }
 }
 
@@ -4281,6 +4364,7 @@ window.onload = async () => {
   document.getElementById('baseDate').value = todayKST();
   renderRoadmap();  // 2030 로드맵 렌더링 (localStorage 우선)
   renderCashflow();  // 월 현금흐름 렌더링 (localStorage 우선)
+  restorePriceStatus();  // 직전 시세 갱신 현황 복원 (마지막 갱신 시각·실패 종목)
   renderEventCalendar();  // 다가오는 이벤트 캘린더 (90일)
   // 적금/예금 만기일 변경 시 캘린더 자동 갱신
   ['dep_d','sav_d','dep','sav'].forEach(id => {
