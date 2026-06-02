@@ -1016,17 +1016,17 @@ td.cv, td.ep { display: table-cell !important; vertical-align: middle; }
 
     <!-- 월 현금흐름 -->
     <div class="card">
-      <div class="ct">💰 월 현금흐름 (투자 & 저축)</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <div class="ct" style="margin-bottom:0;">💰 월 현금흐름 (투자 & 저축)</div>
+        <div style="display:flex;gap:6px;">
+          <button id="cf-edit-btn" class="btn-p btn-sm" style="background:#065f46;" onclick="toggleCashflowEdit()">✏️ 수정</button>
+          <button id="cf-save-btn" class="btn-p btn-sm" style="display:none;background:#1D4ED8;" onclick="saveCashflow()">💾 저장</button>
+          <button id="cf-cancel-btn" class="btn-p btn-sm" style="display:none;background:#64748b;" onclick="cancelCashflowEdit()">✕ 취소</button>
+        </div>
+      </div>
       <table class="cf-table">
         <thead><tr><th>계좌</th><th>월 납입액</th><th>납입일/전략</th><th>비고</th></tr></thead>
-        <tbody>
-          <tr><td><span class="badge bi" style="font-size:11px;">ISA</span></td><td style="font-weight:800;color:var(--primary);">880,000원</td><td>나스닥 68만원 + S&P 20만원</td><td style="font-size:10px;color:#888;">한국투자증권</td></tr>
-          <tr><td><span class="badge bp" style="font-size:11px;">연금/IRP</span></td><td style="font-weight:800;color:var(--primary);">200,000원</td><td>매월 25일</td><td style="font-size:10px;color:#888;">세액공제 혜택</td></tr>
-          <tr><td><span class="badge bd" style="font-size:11px;">DC</span></td><td style="font-weight:800;color:#10b981;">228,000원</td><td>S&P / AI 분할</td><td style="font-size:10px;color:#888;">회사 납입 (본인 부담 없음)</td></tr>
-          <tr><td><span class="badge bt" style="font-size:11px;">토스</span></td><td style="font-weight:800;color:var(--primary);">80,000원</td><td>우주항공 매월 1일 5주</td><td style="font-size:10px;color:#888;">토스증권</td></tr>
-          <tr><td><span class="badge bs" style="font-size:11px;">청약/적금</span></td><td style="font-weight:800;color:var(--primary);">150,000원</td><td>우대금리 조건</td><td style="font-size:10px;color:#888;">청약 10만 + 적금 5만</td></tr>
-          <tr class="total-row"><td><b>합계</b></td><td><b>1,538,000원</b></td><td colspan="2"><span style="font-size:10px;opacity:0.7;">본인 납입: 1,310,000원 / 회사 228,000원</span></td></tr>
-        </tbody>
+        <tbody id="cf-tbody"></tbody>
       </table>
     </div>
 
@@ -4071,6 +4071,98 @@ function cancelRoadmapEdit() {
   renderRoadmap();
 }
 
+// ════════════════════════════════════════════
+//  월 현금흐름 수기 입력 & localStorage 저장
+// ════════════════════════════════════════════
+const CASHFLOW_LS_KEY = 'cashflow_items_v1';
+
+// 기본값 (기존 입력 수치 그대로 보존)
+// isCompany: true → 회사 납입(본인 부담 없음, 본인 납입 합계에서 제외)
+const CASHFLOW_DEFAULT = [
+  { badge:'bi', color:'var(--primary)', label:'ISA',      amount:880000, strategy:'나스닥 68만원 + S&P 20만원', note:'한국투자증권',          isCompany:false },
+  { badge:'bp', color:'var(--primary)', label:'연금/IRP', amount:200000, strategy:'매월 25일',                 note:'세액공제 혜택',          isCompany:false },
+  { badge:'bd', color:'#10b981',        label:'DC',       amount:228000, strategy:'S&P / AI 분할',             note:'회사 납입 (본인 부담 없음)', isCompany:true  },
+  { badge:'bt', color:'var(--primary)', label:'토스',      amount:80000,  strategy:'우주항공 매월 1일 5주',      note:'토스증권',              isCompany:false },
+  { badge:'bs', color:'var(--primary)', label:'청약/적금', amount:150000, strategy:'우대금리 조건',             note:'청약 10만 + 적금 5만',    isCompany:false }
+];
+
+function loadCashflowItems() {
+  try {
+    const saved = localStorage.getItem(CASHFLOW_LS_KEY);
+    if (saved) return JSON.parse(saved);
+  } catch(e) {}
+  return CASHFLOW_DEFAULT.map(item => Object.assign({}, item));
+}
+
+function renderCashflow() {
+  const items = loadCashflowItems();
+  const tbody = document.getElementById('cf-tbody');
+  if (!tbody) return;
+  let total = 0, company = 0;
+  const rows = items.map(item => {
+    const amt = Number(item.amount) || 0;
+    total += amt;
+    if (item.isCompany) company += amt;
+    return `<tr>
+      <td><span class="badge ${item.badge}" style="font-size:11px;">${item.label}</span></td>
+      <td style="font-weight:800;color:${item.color};">${amt.toLocaleString()}원</td>
+      <td>${item.strategy || ''}</td>
+      <td style="font-size:10px;color:#888;">${item.note || ''}</td>
+    </tr>`;
+  }).join('');
+  const self = total - company;
+  tbody.innerHTML = rows + `<tr class="total-row">
+    <td><b>합계</b></td>
+    <td><b>${total.toLocaleString()}원</b></td>
+    <td colspan="2"><span style="font-size:10px;opacity:0.7;">본인 납입: ${self.toLocaleString()}원 / 회사 ${company.toLocaleString()}원</span></td>
+  </tr>`;
+}
+
+function renderCashflowEdit() {
+  const items = loadCashflowItems();
+  const tbody = document.getElementById('cf-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = items.map((item, i) => `<tr>
+    <td><span class="badge ${item.badge}" style="font-size:11px;">${item.label}</span></td>
+    <td><input id="cf-amt-${i}" type="number" value="${Number(item.amount)||0}" style="width:100px;padding:4px;border:1px solid #cbd5e1;border-radius:6px;font-weight:700;"></td>
+    <td><input id="cf-strat-${i}" type="text" value="${(item.strategy||'').replace(/"/g,'&quot;')}" style="width:100%;min-width:120px;padding:4px;border:1px solid #cbd5e1;border-radius:6px;"></td>
+    <td><input id="cf-note-${i}" type="text" value="${(item.note||'').replace(/"/g,'&quot;')}" style="width:100%;min-width:90px;padding:4px;border:1px solid #cbd5e1;border-radius:6px;font-size:10px;"></td>
+  </tr>`).join('') + `<tr class="total-row"><td colspan="4" style="font-size:10px;color:#94a3b8;">※ 월 납입액 숫자만 입력하세요. 합계·본인/회사 납입은 자동 계산됩니다.</td></tr>`;
+}
+
+function toggleCashflowEdit() {
+  document.getElementById('cf-edit-btn').style.display = 'none';
+  document.getElementById('cf-save-btn').style.display = '';
+  document.getElementById('cf-cancel-btn').style.display = '';
+  renderCashflowEdit();
+}
+
+function saveCashflow() {
+  const items = loadCashflowItems();
+  const newItems = items.map((item, i) => Object.assign({}, item, {
+    amount:   Number(document.getElementById(`cf-amt-${i}`).value) || 0,
+    strategy: (document.getElementById(`cf-strat-${i}`).value || '').trim(),
+    note:     (document.getElementById(`cf-note-${i}`).value || '').trim()
+  }));
+  try {
+    localStorage.setItem(CASHFLOW_LS_KEY, JSON.stringify(newItems));
+  } catch(e) {
+    alert('저장 실패: localStorage를 사용할 수 없습니다.');
+    return;
+  }
+  document.getElementById('cf-edit-btn').style.display = '';
+  document.getElementById('cf-save-btn').style.display = 'none';
+  document.getElementById('cf-cancel-btn').style.display = 'none';
+  renderCashflow();
+}
+
+function cancelCashflowEdit() {
+  document.getElementById('cf-edit-btn').style.display = '';
+  document.getElementById('cf-save-btn').style.display = 'none';
+  document.getElementById('cf-cancel-btn').style.display = 'none';
+  renderCashflow();
+}
+
 // ═══════════════════════════════════════════════════════════════
 // 🆕 종목 추가 모달 — 계좌/종목명/수량/매입단가/자산군/시장/코드 입력
 // ═══════════════════════════════════════════════════════════════
@@ -4188,6 +4280,7 @@ window.onload = async () => {
   // 기준일은 항상 오늘 날짜로 재설정 (캐시된 날짜가 덮어쓰지 않도록)
   document.getElementById('baseDate').value = todayKST();
   renderRoadmap();  // 2030 로드맵 렌더링 (localStorage 우선)
+  renderCashflow();  // 월 현금흐름 렌더링 (localStorage 우선)
   renderEventCalendar();  // 다가오는 이벤트 캘린더 (90일)
   // 적금/예금 만기일 변경 시 캘린더 자동 갱신
   ['dep_d','sav_d','dep','sav'].forEach(id => {
