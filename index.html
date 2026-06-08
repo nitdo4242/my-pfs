@@ -485,7 +485,6 @@ input.price-stale { border:1.5px solid #f59e0b !important; background:#fffbeb !i
   .page-header h1 { font-size: 21px; }
   .page-header > div:last-child { width: 100%; display: grid !important; grid-template-columns: 1fr 1fr; gap: 6px !important; }
   .page-header > div:last-child .btn-p { width: 100%; padding: 10px 8px; font-size: 11px; }
-  .page-header > div:last-child .btn-p:last-child { grid-column: span 2; }
 
   /* 탭 — 행 줄바꿈 가능 + 작은 폰트 */
   .tabs { padding: 4px; gap: 3px; }
@@ -682,6 +681,43 @@ input.price-stale { border:1.5px solid #f59e0b !important; background:#fffbeb !i
   .wrap { padding: 0.8rem 1rem; }
   .page-header { flex-direction: row; }
 }
+
+/* ── ⑨ 📱 모바일 여백·간격 넓히기 + 가로 스크롤 개선 (요청 반영) ────── */
+/* 9-1. 카드/항목 사이를 넉넉하게 (시원한 레이아웃) */
+@media (max-width: 640px) {
+  .wrap  { padding: 1.25rem 0.9rem; }
+  .card  { padding: 1.35rem 1.15rem; margin-bottom: 20px; }
+  .ct    { margin-bottom: 16px; }
+  .mgrid { gap: 14px; margin-bottom: 1.25rem; }
+  .mc    { padding: 16px; }
+  #tab-input td, #tab-summary td, #tab-plan td, #tab-insurance td { padding: 11px 8px; }
+}
+
+/* 9-2. 가로 스크롤 표: 관성 스크롤 + 스크롤바 + 좌우 그림자 힌트 */
+.hd-scroll,
+div[style*="overflow-x:auto"] {
+  -webkit-overflow-scrolling: touch;            /* iOS 부드러운 관성 스크롤 */
+  background:
+    linear-gradient(to right, var(--card-bg) 50%, rgba(248,250,252,0)) 0 0,
+    linear-gradient(to left,  var(--card-bg) 50%, rgba(248,250,252,0)) 100% 0,
+    linear-gradient(to right, rgba(15,23,42,0.13), rgba(15,23,42,0)) 0 0,
+    linear-gradient(to left,  rgba(15,23,42,0.13), rgba(15,23,42,0)) 100% 0;
+  background-repeat: no-repeat;
+  background-size: 24px 100%, 24px 100%, 15px 100%, 15px 100%;
+  background-attachment: local, local, scroll, scroll;  /* 끝까지 밀면 그림자 사라짐 */
+}
+.hd-scroll::-webkit-scrollbar,
+div[style*="overflow-x:auto"]::-webkit-scrollbar { height: 7px; }
+.hd-scroll::-webkit-scrollbar-track,
+div[style*="overflow-x:auto"]::-webkit-scrollbar-track { background: #eef2f7; border-radius: 4px; }
+.hd-scroll::-webkit-scrollbar-thumb,
+div[style*="overflow-x:auto"]::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+
+/* 9-3. 입력 탭은 모바일에서 카드로 변환되므로 스크롤 그림자 제거 */
+@media (max-width: 640px) {
+  #tab-input .card > div[style*="overflow-x"] { background: none !important; }
+}
+
 /* 보험 만기/갱신 임박 배지 */
 .ins-exp-badge { display:inline-block; font-size:9px; font-weight:800; padding:2px 8px; border-radius:99px; margin-left:6px; white-space:nowrap; vertical-align:middle; }
 </style>
@@ -699,7 +735,7 @@ input.price-stale { border:1.5px solid #f59e0b !important; background:#fffbeb !i
       <button class="btn-p btn-sm" onclick="loadFromGAS()">☁️ GAS 로드</button>
       <button class="btn-p btn-sm" onclick="fetchPrices()">📡 시세 불러오기</button>
       <button class="btn-p btn-sm" onclick="openAddHoldingModal()">➕ 종목 추가</button>
-      <button class="btn-p" onclick="calcAll()">⚡ 전체 계산 및 동기화</button>
+      <button class="btn-p btn-sm" onclick="calcAll()">🔄 계산·동기화</button>
     </div>
   </div>
 
