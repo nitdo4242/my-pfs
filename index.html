@@ -1371,7 +1371,7 @@ input.price-stale { border:1.5px solid #f59e0b !important; background:#fffbeb !i
 
 // ── 🔑 GAS 프록시 연결 상수 (gas_backend.gs 와 동일하게 유지) ──
 const GAS_URL   = 'https://script.google.com/macros/s/AKfycbz3cQR17IbFrsEVyAhkDEuuxl9VCtk8CaGiES4sXlcyNIcDvyz_zA6F2Rj2hEPRYwjolg/exec';
-const GAS_TOKEN = 'mong2-pfs-v1';
+const GAS_TOKEN = 'pfs-DETp4T715RESi6JUmWMkvo23cnShhpO';
 const FETCH_TIMEOUT_MS = 15000;  // 15초 타임아웃
 
 // ── ⏱️ 타임아웃 내장 fetch 래퍼 ───────────────────────────────
@@ -1383,6 +1383,24 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = FETCH_TIMEOUT_MS)
     return res;
   } finally {
     clearTimeout(timer);
+  }
+}
+
+// ── 🔁 실패 시 자동 재시도 fetch 래퍼 (기본 1회 재시도) ───────────────
+async function fetchWithRetry(url, options = {}, retries = 1, retryDelayMs = 2000) {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const res = await fetchWithTimeout(url, options);
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      return res;
+    } catch (e) {
+      if (attempt < retries) {
+        setSyncStatus('⚠️ 시세 조회 실패 — ' + (retryDelayMs / 1000) + '초 후 재시도...');
+        await new Promise(r => setTimeout(r, retryDelayMs));
+        continue;   // 다시 시도
+      }
+      throw e;       // 마지막 시도도 실패 → 호출부 catch로 전달
+    }
   }
 }
 const HISTORY_KEY = 'pfs_history';
@@ -2213,8 +2231,7 @@ async function fetchPrices() {
     let url = `${GAS_URL}?action=price&token=${encodeURIComponent(GAS_TOKEN)}`;
     if (extraUs) url += `&extra_us=${encodeURIComponent(extraUs)}`;
     if (extraKr) url += `&extra_kr=${encodeURIComponent(extraKr)}`;
-    const res = await fetchWithTimeout(url);
-    if (!res.ok) throw new Error('서버 통신 실패 (HTTP ' + res.status + ')');
+    const res = await fetchWithRetry(url);   // 🔁 실패 시 2초 후 1회 자동 재시도
     const data = await res.json();
 
     if (data.status === 'forbidden') {
