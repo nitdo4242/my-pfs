@@ -1341,8 +1341,8 @@ div[style*="overflow-x:auto"]::-webkit-scrollbar-thumb { background: #cbd5e1; bo
           <td class="cv">200,000원</td>
         </tr>
         <tr>
-          <td>투입 기간</td>
-          <td class="cv">273개월 (22년 9개월)</td>
+          <td>투입 기간 <span style="font-size:10px;color:#94a3b8;">(오늘~2049.1 자동계산)</span></td>
+          <td class="cv" id="ret_accum_period">-</td>
         </tr>
         <tr>
           <td>누적 투입액</td>
@@ -1442,6 +1442,14 @@ async function fetchWithRetry(url, options = {}, retries = 1, retryDelayMs = 200
 const HISTORY_KEY = 'pfs_history';
 const INPUTS_KEY  = 'pfs_inputs';   // 입력값 로컬 캐시 키
 const DIV_KEY     = 'pfs-div-v1';  // 주당 분배금 캐시 키
+const NETINV_KEY  = 'pfs-netinv-v1';  // 계좌별 순수투자금(실제 납입현금) 캐시 키
+
+// ─── 계좌별 순수투자금 저장소 (계좌 key → 실제 넣은 현금) ───
+//   · 평가수익률(매입단가 대비)과 별개로, "실제 넣은 현금 대비" 실수익률 계산용
+//   · 매도 차익은 예수금으로 평가금액에 포함되므로 (평가금액 − 순수투자금)이 곧 실현+미실현 총수익
+//   · 기기 localStorage 저장 + saveToGAS/loadFromGAS로 폰-PC 동기화 (data.net_<계좌key>)
+let NETINV = (() => { try { return JSON.parse(localStorage.getItem(NETINV_KEY)) || {}; } catch(_) { return {}; } })();
+function saveNetInv() { try { localStorage.setItem(NETINV_KEY, JSON.stringify(NETINV)); } catch(e) { console.warn('순수투자금 저장 실패:', e); } }
 
 // ─── 인컴 종목 전역 정의 (updStrategy · calcMonthlyIncome 공용) ───
 const INCOME_QUARTERLY = [
@@ -1507,12 +1515,15 @@ const sv   = (id,v) => { const e=document.getElementById(id); if(e) e.textConten
 
 const catCol = {'S&P500':'#1D9E75','나스닥100':'#378ADD','반도체/AI/혁신':'#7F77DD','배당/인컴':'#BA7517','개별/테마':'#D4537E','안전자산(TDF)':'#534AB7','안전자산(현금)':'#D85A30','실물/대안자산':'#D4A017'};
 const catDef = {'S&P500':20,'나스닥100':35,'반도체/AI/혁신':18,'배당/인컴':5,'개별/테마':5,'안전자산(TDF)':5,'안전자산(현금)':7,'실물/대안자산':5};
+// ⚠ 아래는 calcAll() 실행 *전* 잠깐 쓰이는 정적 fallback 텍스트일 뿐.
+//   계산 후에는 D.catItems(실보유 기준 동적 목록)가 항상 우선 표시됨.
+//   → 종목 매수/매도 시 이 텍스트를 수동으로 고칠 필요 없음.
 const catItems = {
   'S&P500':         'TIGER 미국S&P500 (ISA) · TIGER 미국S&P500 (DC) · ACE 미국S&P500 (IRP)',
   '나스닥100':       'KODEX 미국나스닥100 (ISA) · ACE 미국나스닥100 (연금저축) · TIGER 미국테크TOP10 INDXX (IRP)',
   '반도체/AI/혁신':  'TIGER 미국AI데이터센터 (DC) · KODEX 삼성전자SK하이닉스채권혼합50 (DC) · 1Q 미국우주항공데크 (토스) · NVDA (토스) · SOXL (카카오페이)',
   '배당/인컴':       'KODEX 미국배당커버드콜액티브 (ISA) · PLUS 고배당주채권혼합 (IRP)',
-  '개별/테마':       '로켓랩 RKLB (카카오페이) · 나이키 NKE (카카오페이) · 테슬라 TSLA (카카오페이)',
+  '개별/테마':       '카카오페이 개별주 (스윙) — 실보유는 계산 후 자동 표시',
   '안전자산(TDF)':   '삼성한국형TDF2045 (DC)',
   '안전자산(현금)':  '예수금 (전 계좌)',
   '실물/대안자산':   '금현물 보유분 (나무증권) — 매도 후 예수금은 안전자산(현금)으로 분류',
@@ -1773,10 +1784,49 @@ function removeUserHolding(id) {
   saveUserHoldingsArr(list);
   rebuildHoldings();
 }
+
+// ═══════════════════════════════════════════════════════════════
+// 🆕 기존(내장) 종목 숨김 처리 — 매도 완료 종목을 화면·계산에서 제외
+// ───────────────────────────────────────────────────────────────
+// · 코드(ACCOUNTS 스키마)는 절대 건드리지 않고 _hidden 플래그만 부여
+//   → 과거 히스토리 스냅샷 상세는 그대로 표시 (데이터 보존 원칙)
+// · 숨김 목록: q 필드 id 배열 (예: ['q_dc_ai']) — localStorage 저장
+//   + saveToGAS/loadFromGAS의 data.hidden_holdings로 폰-PC 동기화
+// · 입력 탭 하단 "삭제된 종목 복원" 영역에서 언제든 복원 가능
+// ═══════════════════════════════════════════════════════════════
+const HIDDEN_HOLDINGS_KEY = 'asset_mgmt_hidden_holdings_v1';
+
+function loadHiddenHoldings() {
+  try { return JSON.parse(localStorage.getItem(HIDDEN_HOLDINGS_KEY) || '[]'); }
+  catch(e) { return []; }
+}
+function saveHiddenHoldingsArr(arr) {
+  try { localStorage.setItem(HIDDEN_HOLDINGS_KEY, JSON.stringify(arr)); }
+  catch(e) { console.warn('숨김 종목 저장 실패:', e); }
+}
+// ACCOUNTS 전 종목에 _hidden 플래그 동기화 (멱등)
+function applyHiddenHoldings() {
+  const set = new Set(loadHiddenHoldings());
+  ACCOUNTS.forEach(a => (a.holdings || []).forEach(h => { h._hidden = set.has(h.q); }));
+}
+// 종목 숨김 (× 버튼) → 저장 → 재렌더
+function hideHolding(qId) {
+  const list = loadHiddenHoldings();
+  if (!list.includes(qId)) list.push(qId);
+  saveHiddenHoldingsArr(list);
+  rebuildHoldings();
+}
+// 숨김 해제 (복원 버튼) → 저장 → 재렌더
+function restoreHolding(qId) {
+  saveHiddenHoldingsArr(loadHiddenHoldings().filter(x => x !== qId));
+  rebuildHoldings();
+}
+
 function rebuildHoldings() {
   // 현재 입력값 보존 → 재렌더 → 복원
   if (typeof saveLocal === 'function') saveLocal();
   injectUserHoldings();
+  applyHiddenHoldings();
   renderInputCards();
   if (typeof loadLocal === 'function') loadLocal();
   if (typeof calcAll === 'function') calcAll();
@@ -1803,13 +1853,20 @@ function renderInputCards() {
   };
 
   // ─── 종목명 셀 (링크 or 플레인) ───
-  const nameCell = h => {
+  // 🆕 기존(내장) 종목에도 × 버튼 — 완전 삭제가 아닌 숨김(복원 가능) 처리
+  //    (카카오페이 동적 종목은 시트가 진실의 원천이므로 버튼 없음)
+  const nameCell = (h, isKpDyn) => {
     const link = h.linkUrl
       ? `<a href="${h.linkUrl}" target="_blank" class="nlink">${h.name} ↗</a>`
       : h.name;
-    const delBtn = h._userAdded
-      ? ` <button onclick="if(confirm('${(h.name||'').replace(/'/g,'\\\'')} 삭제할까요?'))removeUserHolding('${h._userHoldingId}')" title="종목 삭제" style="border:none;background:#fee2e2;color:#b91c1c;border-radius:6px;font-size:10px;font-weight:700;padding:1px 5px;margin-left:4px;cursor:pointer;">×</button>`
-      : '';
+    const btnStyle = 'border:none;background:#fee2e2;color:#b91c1c;border-radius:6px;font-size:10px;font-weight:700;padding:1px 5px;margin-left:4px;cursor:pointer;';
+    const safeName = (h.name||'').replace(/'/g,'\\\'');
+    let delBtn = '';
+    if (h._userAdded) {
+      delBtn = ` <button onclick="if(confirm('${safeName} 삭제할까요?'))removeUserHolding('${h._userHoldingId}')" title="종목 삭제" style="${btnStyle}">×</button>`;
+    } else if (!isKpDyn) {
+      delBtn = ` <button onclick="if(confirm('${safeName} 항목을 목록에서 삭제할까요?\\n(입력 탭 하단 [삭제된 종목 복원]에서 언제든 되살릴 수 있습니다)'))hideHolding('${h.q}')" title="종목 삭제 (복원 가능)" style="${btnStyle}">×</button>`;
+    }
     return link + delBtn;
   };
 
@@ -1843,11 +1900,12 @@ function renderInputCards() {
     // 1. 일반 종목 (현재가 입력창 생성 파트)
     // 🆕 v2.3: 카카오페이 동적 카드인 경우 수량·평단은 readonly (시트에서만 수정)
     acct.holdings.forEach(h => {
+      if (h._hidden) return;  // 🆕 숨김(삭제) 종목은 행 미생성 → 계산·집계 자동 제외
       const isKpDyn  = acct.kakaopayDynamic === true;
       const qInput = inp(h.q, h.defQ, h.qStep, isKpDyn);
       const aInput = inp(h.a, h.defA, h.aStep, isKpDyn);
       const cInput = inpPh(h.c, h.cPlaceholder, h.cStep);  // 현재가는 시세 자동 갱신이라 readonly 불필요
-      const nameTd = `<td>${nameCell(h)}</td>`;
+      const nameTd = `<td>${nameCell(h, isKpDyn)}</td>`;
 
       if (acct.layout === 'split') {
         rows += `<tr>${nameTd}<td data-label="주수">${qInput}</td><td data-label="매입단가">${aInput}</td><td data-label="현재가">${cInput}</td><td class="cv" data-label="평가금액" id="${h.ev}">-</td><td class="cv" data-label="수익률" id="${h.pc}">-</td></tr>`;
@@ -1882,15 +1940,41 @@ function renderInputCards() {
       rows += `<tr><td style="color:#888;">${c.label}</td><td colspan="4" data-label="금액">${cashInput}</td></tr>`;
     }
 
+    // 🆕 순수투자금(실제 넣은 현금) 입력 + 실수익률 = (평가금액 − 순수투자금) / 순수투자금
+    const netFooter = `<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px;padding-top:10px;border-top:1px dashed #e2e8f0;font-size:11px;">
+        <span style="color:#64748b;font-weight:700;">순수투자금</span>
+        <input type="number" id="net_${acct.key}" value="${NETINV[acct.key] ?? ''}" oninput="updAcctReal('${acct.key}')" placeholder="실제 넣은 현금" style="width:140px;border:1px solid #cbd5e1;border-radius:6px;padding:4px 7px;font-size:11px;text-align:right;">
+        <span style="color:#64748b;font-weight:700;margin-left:4px;">실수익률</span>
+        <span id="nireal_${acct.key}" style="font-weight:800;color:#94a3b8;">-</span>
+        <span style="color:#cbd5e1;">|</span>
+        <span style="color:#94a3b8;">투자원금(실제 넣은 현금) 대비 현재 평가수익률</span>
+      </div>`;
+
     return `<div class="card">
       <div class="ct"><span class="badge ${acct.badge}">${acct.key}</span> ${acct.subtitle}</div>
       <div style="overflow-x:auto;">
       <table>${colgroup}${thead}<tbody>${rows}</tbody></table>
       </div>
+      ${netFooter}
     </div>`;
   };
 
-  host.innerHTML = ACCOUNTS.map(renderCard).join('');
+  // 🆕 삭제(숨김)된 종목 복원 영역 — 숨김 종목이 있을 때만 표시
+  const hiddenItems = [];
+  ACCOUNTS.forEach(a => (a.holdings || []).forEach(h => {
+    if (h._hidden) hiddenItems.push({ acct: a.key, name: h.name, q: h.q });
+  }));
+  const restoreCard = hiddenItems.length === 0 ? '' : `<div class="card" style="border:1px dashed #cbd5e1;background:#f8fafc;">
+    <div class="ct" style="color:#64748b;">🗑 삭제된 종목 복원 <span style="font-weight:400;font-size:11px;color:#94a3b8;">— 매도 완료로 목록에서 뺀 종목 · 재매수 시 복원하세요</span></div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;">
+      ${hiddenItems.map(it => `<span style="display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:5px 10px;font-size:12px;">
+        <span style="color:#475569;">${it.name} <span style="color:#94a3b8;">(${it.acct})</span></span>
+        <button onclick="restoreHolding('${it.q}')" style="border:none;background:#dcfce7;color:#15803d;border-radius:6px;font-size:11px;font-weight:700;padding:2px 8px;cursor:pointer;">복원</button>
+      </span>`).join('')}
+    </div>
+  </div>`;
+
+  host.innerHTML = ACCOUNTS.map(renderCard).join('') + restoreCard;
 }
 
 // ─── 로컬 캐시 저장 ───
@@ -2167,6 +2251,18 @@ async function loadFromGAS() {
     }
     if (json?.data && Object.keys(json.data).length > 0) {
       lastSaved = json.data;
+      // 🆕 숨김(삭제) 종목 목록 동기화 — 값 주입 *전에* 카드 재렌더 (행 구성 일치)
+      if (json.data.hidden_holdings !== undefined) {
+        try {
+          const hh = JSON.parse(json.data.hidden_holdings || '[]');
+          if (Array.isArray(hh) && JSON.stringify(hh) !== JSON.stringify(loadHiddenHoldings())) {
+            saveHiddenHoldingsArr(hh);
+            injectUserHoldings();
+            applyHiddenHoldings();
+            renderInputCards();
+          }
+        } catch(_) { /* 손상된 목록은 무시 */ }
+      }
       ALL_FIELDS.forEach(id => {
         if (id === 'baseDate') return; // 🌟 기준일은 과거 데이터로 덮어쓰지 않음
         if (json.data[id] !== undefined && json.data[id] !== '') {
@@ -2174,6 +2270,15 @@ async function loadFromGAS() {
           if (el) el.value = json.data[id];
         }
       });
+      // 🆕 계좌별 순수투자금 복원 (data.net_<계좌key> → NETINV)
+      Object.keys(json.data).forEach(k => {
+        if (k.indexOf('net_') === 0 && json.data[k] !== '' && json.data[k] != null) {
+          NETINV[k.slice(4)] = json.data[k];
+        }
+      });
+      saveNetInv();
+      // 이미 렌더된 계좌 카드의 순수투자금 입력칸도 서버 값으로 갱신
+      Object.keys(NETINV).forEach(k => { const el=document.getElementById('net_'+k); if(el) el.value=NETINV[k]; });
     setSyncStatus('✅ 동기화 완료: ' + new Date().toLocaleTimeString('ko-KR'));
       calcAll._skipRemoteSave = true;   // ✅ 방금 받은 값을 되저장하지 않음
       calcAll();
@@ -2199,6 +2304,10 @@ async function loadFromGAS() {
 async function saveToGAS() {
   const data = {};
   ALL_FIELDS.forEach(id => { const el=document.getElementById(id); if(el) data[id]=el.value; });
+  // 🆕 계좌별 순수투자금도 함께 저장 (폰-PC 동기화) — data.net_<계좌key>
+  Object.keys(NETINV).forEach(k => { if (NETINV[k] !== '' && NETINV[k] != null) data['net_' + k] = NETINV[k]; });
+  // 🆕 숨김(삭제) 종목 목록도 함께 저장 (폰-PC 동기화) — 빈 배열도 저장해 복원 상태 반영
+  data['hidden_holdings'] = JSON.stringify(loadHiddenHoldings());
   setSyncStatus('💾 구글 시트에 저장 중...');
 
   try {
@@ -2242,11 +2351,13 @@ async function fetchPrices() {
   //   - 기존 PRICE_MAP_US의 sym(GC=F, NVDA)과 중복 안 되도록 체크
   const kpAcct = ACCOUNTS.find(a => a.key === '카카오페이');
   if (kpAcct && Array.isArray(kpAcct.holdings)) {
-    const existingSyms = new Set(PRICE_MAP_US.map(m => m.sym));
     // 기존에 추가됐던 카카오페이 항목 제거 (다음 갱신을 위해)
     for (let i = PRICE_MAP_US.length - 1; i >= 0; i--) {
       if (PRICE_MAP_US[i]._fromKakaopay) PRICE_MAP_US.splice(i, 1);
     }
+    // 🛠 중복 체크는 반드시 *제거 후* 수행 — 제거 전에 스냅샷을 뜨면
+    //    2회차 시세 조회부터 카카오페이 티커가 "이미 존재"로 오인되어 누락되던 버그 수정
+    const existingSyms = new Set(PRICE_MAP_US.map(m => m.sym));
     // 현재 시트 기준 티커 추가
     kpAcct.holdings.forEach(h => {
       if (!h.ticker) return;
@@ -2295,6 +2406,8 @@ async function fetchPrices() {
         return;
     }
    PRICE_MAP_US.forEach(item => {
+          // 🆕 숨김(삭제) 종목 등 입력칸이 없는 항목은 조회 결과 표기 생략
+          if (!item.isGold && !item.ids.some(id => document.getElementById(id))) return;
           const price = data.us?.[item.sym];
       if (price == null || !Number.isFinite(price) || price <= 0) {
              failed.push(item.label);
@@ -2321,6 +2434,8 @@ async function fetchPrices() {
 
     // 3) 한국 ETF / 채권
     PRICE_MAP_KRX.forEach(item => {
+      // 🆕 숨김(삭제) 종목 등 입력칸이 없는 항목은 조회 결과 표기 생략
+      if (!item.ids.some(id => document.getElementById(id))) return;
       const price = data.kr[item.code];
       if (price) {
         item.ids.forEach(id => {
@@ -2391,6 +2506,7 @@ function calcAll() {
 
     // ① 종목별 계산 · 렌더 · 카테고리 집계
     acct.holdings.forEach(h => {
+      if (h._hidden) return;  // 🆕 숨김(삭제) 종목 계산 제외
       const r = ci(h.q, h.a, h.c, h.usd, rate);
       if (h.mode === 'split')    updItems(r, h.ev, h.pc);
       if (h.mode === 'combined') updItem(r, h.ep);
@@ -2466,6 +2582,35 @@ function calcAll() {
   
   // showTab('summary', 1); // ◀ 주석 처리하여 화면 튕김 방지
 }
+// ─── 계좌별 순수투자금 → 실수익률 1개 갱신 (입력 즉시, 카드 재생성 없이) ───
+//   실수익률 = (평가금액 − 순수투자금) / 순수투자금 × 100
+//   · 평가금액 = 보유주식 평가 + 예수금 (현재 이 계좌의 총 가치)
+//   · 내가 실제 넣은 현금(순수투자금) 대비 지금 얼마가 됐나 = 투자원금 대비 평가수익률
+function setRealCell(key) {
+  const ev = (typeof D !== 'undefined' && D.a[key]) ? D.a[key].eval : 0;
+  const ni = parseFloat(NETINV[key]) || 0;
+  const cell = document.getElementById('nireal_' + key);
+  if (!cell) return;
+  if (ni > 0 && ev > 0) {
+    const p = (ev - ni)/ni*100;
+    cell.textContent = fmtP(p);
+    cell.style.color = p >= 0 ? '#16a34a' : '#ef4444';
+  } else {
+    cell.textContent = '-';
+    cell.style.color = '#94a3b8';
+  }
+}
+function updAcctReal(key) {
+  const el = document.getElementById('net_' + key);
+  if (el) { NETINV[key] = el.value; saveNetInv(); }
+  setRealCell(key);
+}
+// ─── 모든 계좌 카드 실수익률 갱신 (calcAll 직후) ───
+function updAllAcctReal() {
+  if (typeof D === 'undefined' || !D.a) return;
+  Object.keys(D.a).forEach(setRealCell);
+}
+
 // ─── 요약 탭 ───
 function updSummary() {
   const rate = D.rate;
@@ -2510,6 +2655,9 @@ function updSummary() {
     <td class="${pc(pnl)}">${(pnl>=0?'+':'')+fmt(pnl)}원</td>
     <td class="${pc(rPct)}">${fmtP(rPct)}</td></tr>`;
   tb.innerHTML = rows; // DOM에 단 1회 기록
+
+  // 🆕 계좌 카드별 실수익률(순수투자금 대비) 갱신
+  updAllAcctReal();
 
   // ── 향후 계획 시뮬레이터 (연 단리 2% / 기준: 2030.12.31 고정) ──
   // ✅ 수학적으로 올바른 이자 계산식 (거치식 + 적립식 분리)
@@ -2765,7 +2913,11 @@ function updWt() {
     const diffStr = (diff>=0?'+':'')+diff.toFixed(1)+'%';
     const diffColor = Math.abs(diff)<2?'#10b981':(diff<0?'#ef4444':'#f59e0b');
     const fillPct = tgt>0?Math.min(actual/tgt*100,100):0;
-    const tip = (D.catItems && D.catItems[cat]) || catItems[cat] || '';
+    // 🆕 계산 완료 후엔 항상 동적 목록(실보유 기준) 사용 — 매도한 종목이
+    //    하드코딩 fallback(catItems)으로 되살아나는 현상 방지
+    const tip = (D.catItems && D.catItems[cat] !== undefined)
+      ? (D.catItems[cat] || '현재 보유 종목 없음')
+      : (catItems[cat] || '');
     c.innerHTML += `<div style="margin-bottom:16px;">
       <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px;align-items:center;">
         <span class="ctip" data-tip="${tip}" style="font-weight:700;">${cat} <span class="ctip-ico">ℹ</span></span>
@@ -4070,16 +4222,19 @@ function calcRetirement() {
   // 월간 수익률 계산
   const monthlyRate = Math.pow(1 + annualRate/100, 1/12) - 1;
 
-  // 1) 적립 단계: 2026.4 ~ 2049.1 (273개월) — 만 60세 (1989.1생)
+  // 1) 적립 단계: 오늘 ~ 2049.1 — 만 60세 (1989.1생)
+  // 🆕 투입 개월 수 동적 계산 (하드코딩 273 제거) — 매달 자동으로 1씩 감소
+  //    초기 자산이 "현재 평가액"으로 갱신되므로 기간도 "현재 기준 잔여 개월"이어야 정합
+  const now     = new Date();
+  const nAccum  = Math.max(1, (2049 - now.getFullYear()) * 12 + (1 - (now.getMonth() + 1)));
   // 기말납입(ordinary annuity) FV: FV = P·(1+r)^n + PMT·[(1+r)^n − 1] / r
-  const n273    = 273;
-  const g273    = Math.pow(1 + monthlyRate, n273);
-  const balance = initial * g273
+  const gAccum  = Math.pow(1 + monthlyRate, nAccum);
+  const balance = initial * gAccum
                 + (monthlyRate > 0
-                    ? monthlyInput * (g273 - 1) / monthlyRate
-                    : monthlyInput * n273); // r=0 예외처리
+                    ? monthlyInput * (gAccum - 1) / monthlyRate
+                    : monthlyInput * nAccum); // r=0 예외처리
   const target2049 = balance;
-  const totalInput = monthlyInput * 273;
+  const totalInput = monthlyInput * nAccum;
   const profit = target2049 - initial - totalInput;
 
   // 2) 수령 단계: 균등분할 (240개월)
@@ -4101,6 +4256,12 @@ function calcRetirement() {
   document.getElementById('ret_display_rate').textContent = `${annualRate.toFixed(2)}%`;
 
   // 5) UI 업데이트 - 적립 단계
+  // 🆕 투입 기간 동적 표시 (예: "270개월 (22년 6개월)")
+  const perEl = document.getElementById('ret_accum_period');
+  if (perEl) {
+    const yy = Math.floor(nAccum / 12), mm = nAccum % 12;
+    perEl.textContent = `${nAccum}개월 (${yy}년${mm > 0 ? ' ' + mm + '개월' : ''})`;
+  }
   document.getElementById('ret_accum_initial').textContent = fmt(Math.round(initial)) + '원';
   document.getElementById('ret_accum_total_input').textContent = fmt(Math.round(totalInput)) + '원';
   document.getElementById('ret_accum_profit').textContent = fmt(Math.round(profit)) + '원';
@@ -4415,6 +4576,7 @@ window.onload = async () => {
 
   // 🆕 사용자 추가 종목을 ACCOUNTS·ALL_FIELDS·PRICE_MAP_*에 주입 (반드시 renderInputCards 이전)
   injectUserHoldings();
+  applyHiddenHoldings();  // 🆕 숨김(삭제) 종목 플래그 반영 (반드시 renderInputCards 이전)
 
   renderInputCards();  // ⚠ 반드시 최우선: ACCOUNTS 스키마에서 계좌 입력 DOM을 동적 생성
   document.getElementById('baseDate').value = todayKST();
@@ -4434,6 +4596,11 @@ window.onload = async () => {
   });
   // 🚫 loadFromGAS() 자동 실행 금지 → "☁️ GAS 로드" 버튼 클릭 시 수동 실행
   // 🚫 fetchPrices() 자동 실행 금지 → "📡 시세 불러오기" 버튼 클릭 시 수동 실행
+
+  // 🆕 로컬 복원값으로 즉시 전체 계산 (포트폴리오 점검 "전체 계산 필요" 해소)
+  //     _skipRemoteSave: 페이지 로드 시 불필요한 서버 되저장(saveToGAS) 방지
+  calcAll._skipRemoteSave = true;
+  calcAll();
 };
 
 // ── UI 아코디언 초기화 (계산 로직과 완전히 독립된 뷰 레이어) ──
